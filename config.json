@@ -1,0 +1,4 @@
+{
+  "dbUrl": "mongodb://localhost/seots_data",
+  "version": "1.0.0"
+}
