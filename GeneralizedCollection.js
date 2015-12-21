@@ -1,4 +1,4 @@
-import dbPromise from '../db'
+import dbPromise from './db'
 
 import bodyParser from 'body-parser'
 import {Router} from 'express'
@@ -16,28 +16,28 @@ export const callbackFunctionToPromise = (fn) => {
 export const apiExposePromise = (promise,req,res) => {
   return promise
     .then((result) => {
-      res.status(200).json({result});
+      res.status(200).json(result);
     })
     .catch((error) => {
       console.log('Error', error, error.stack);
-      res.status(500).json({error});
+      res.status(500).json(error);
     })
 }
 
 export const apiExproseFromPromise = (req,res) => {
   return [
     (result) => {
-      res.status(200).json({result});
+      res.status(200).json(result);
     },
     (error) => {
       console.log('Error', error, error.stack);
-      res.status(500).json({error});
+      res.status(500).json(error);
     }
   ];
 }
 
 export const CollectionOperations = (collectionName) => {return {
-  findAll: (criteria) => {
+  fetch: (criteria) => {
     return dbPromise
       .then((db) => {
         return db
@@ -49,9 +49,15 @@ export const CollectionOperations = (collectionName) => {return {
   upsertOne: (doc) => {
     return dbPromise
       .then((db) => {
-        return db
-          .collection(collectionName)
-          .updateOne({id : doc.id}, doc, {upsert: true})
+        if(doc.id === undefined) {
+          return db
+            .collection(collectionName)
+            .insertOne(doc)
+        } else {
+          return db
+            .collection(collectionName)
+            .updateOne({id : doc.id}, doc, {upsert: true})
+        }
       })
   },
   getRekt: () => {
@@ -67,21 +73,22 @@ export const CollectionOperations = (collectionName) => {return {
 const identity = (a) => a;
 
 export const CustomizeCollectionApi = (collectionName,hydrate=identity,serialize=identity) => {
+  const operations = CollectionOperations(collectionName);
   return Router()
     .use(bodyParser.json())
     .post('/fetch/', (req,res) => {
-      CollectionOperations(collectionName).findAll(req.body)
+      operations.fetch(req.body)
         .then((docs) => docs.map(hydrate))
         .then(...apiExproseFromPromise(req,res));
     })
-    .post('/upsert/', (req,res) => {
+    .post('/upsertOne/', (req,res) => {
       const doc = serialize(req.body);
       console.log('Upserting', doc);
-      CollectionOperations(collectionName).upsertOne(doc)
+      operations.upsertOne(doc)
         .then(...apiExproseFromPromise(req,res));
     })
     .post('/getRekt/', (req,res) => {
-      CollectionOperations(collectionName).getRekt()
+      operations.getRekt()
         .then(...apiExproseFromPromise(req,res));
     })
 }
