@@ -1,5 +1,7 @@
 import dbPromise from './db'
 
+import uuid from 'uuid'
+
 import bodyParser from 'body-parser'
 import {Router} from 'express'
 
@@ -50,6 +52,7 @@ export const CollectionOperations = (collectionName) => {return {
     return dbPromise
       .then((db) => {
         if(doc.id === undefined) {
+          doc.id = uuid.v4();
           return db
             .collection(collectionName)
             .insertOne(doc)
