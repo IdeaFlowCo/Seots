@@ -51,6 +51,7 @@ export const CollectionOperations = (collectionName) => {return {
   upsertOne: (doc) => {
     return dbPromise
       .then((db) => {
+        delete doc._id;
         if(doc.id === undefined) {
           doc.id = uuid.v4();
           return db
