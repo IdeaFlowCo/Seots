@@ -52,15 +52,24 @@ export const CollectionOperations = (collectionName) => {return {
     return dbPromise
       .then((db) => {
         delete doc._id;
+        delete doc.version;
+        delete doc.creationTime;
+        doc.modificationTime = Date.now();
         if(doc.id === undefined) {
           doc.id = uuid.v4();
+          doc.creationTime = Date.now();
+          doc.version = 0;
           return db
             .collection(collectionName)
             .insertOne(doc)
         } else {
           return db
             .collection(collectionName)
-            .updateOne({id : doc.id}, doc, {upsert: true})
+            .updateOne(
+              {id : doc.id},
+              {$set: doc, $setOnInsert: {creationTime: Date.now()}, $inc: {version: 1}},
+              {upsert: true}
+            )
         }
       })
   },
