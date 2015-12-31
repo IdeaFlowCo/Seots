@@ -45,6 +45,7 @@ export const CollectionOperations = (collectionName) => {return {
         return db
           .collection(collectionName)
           .find(criteria || {})
+          .sort({creationTime : 1})
           .toArray();
       })
   },

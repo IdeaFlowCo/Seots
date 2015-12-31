@@ -4,6 +4,27 @@ import config from './config'
 const app = express();
 
 import {CustomizeCollectionApi} from './GeneralizedCollection'
+import CookieParser from 'cookie-parser'
+
+app.use('/*', CookieParser());
+
+// Auth
+import * as Auth from './Auth'
+import dbPromise from './db'
+import bodyParser from 'body-parser'
+const authRouter = express.Router();
+
+authRouter
+  .use(bodyParser.json())
+  .post('/login', Auth.login)
+  .post('/register', Auth.register)
+  .get('/logout', Auth.logout)
+  .get('/sessiondata', (req,res) => {
+    res.status(200).json(req.sessiondata);
+  })
+
+app.use(Auth.session)
+app.use('/auth', authRouter);
 
 app.use('/persistence/boards', CustomizeCollectionApi('boards'));
 app.use('/persistence/gestalts', CustomizeCollectionApi('gestalts'));
