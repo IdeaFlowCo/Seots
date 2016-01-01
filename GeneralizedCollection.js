@@ -74,6 +74,9 @@ export const CollectionOperations = (collectionName) => {return {
         }
       })
   },
+  insertOne: (doc) => {
+    
+  },
   getRekt: () => {
     return dbPromise
       .then((db) => {
@@ -86,6 +89,8 @@ export const CollectionOperations = (collectionName) => {return {
 
 const identity = (a) => a;
 
+import * as AccessControl from './AccessControl'
+
 export const CustomizeCollectionApi = (collectionName,hydrate=identity,serialize=identity) => {
   const operations = CollectionOperations(collectionName);
   return Router()
@@ -93,10 +98,13 @@ export const CustomizeCollectionApi = (collectionName,hydrate=identity,serialize
     .post('/fetch/', (req,res) => {
       operations.fetch(req.body)
         .then((docs) => docs.map(hydrate))
+        .then((docs) => AccessControl.filter(docs,req.sessiondata))
         .then(...apiExproseFromPromise(req,res));
     })
     .post('/upsertOne/', (req,res) => {
-      const doc = serialize(req.body);
+      let doc = serialize(req.body);
+      // TODO: Stop overwriting
+      doc = AccessControl.addACLToDoc(doc,req.sessiondata);
       console.log('Upserting', doc);
       operations.upsertOne(doc)
         .then(...apiExproseFromPromise(req,res));

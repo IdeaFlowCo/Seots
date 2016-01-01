@@ -22,7 +22,7 @@ export const session = (req,res,next) => {
     .then((sessiondata) => {
       if(sessiondata == null) {
         console.log('sessiondata not found');
-        req.sessiondata = {};
+        req.sessiondata = {sessionid};
       } else {
         console.log('sessiondata found',sessiondata);
         req.sessiondata = sessiondata;
@@ -50,7 +50,15 @@ export const login = (req,res) => {
         res.status(403).json({message: 'Incorrect username or password'});
       };
       const user = users[0];
-      res.status(200).json({message: 'Login pass'})
+
+      const sessiondata = req.sessiondata;
+      const newSessionData = Object.assign({},sessiondata,{
+        username
+      });
+      updateSessionData(sessiondata.sessionid,newSessionData)
+        .then(() => {
+          res.status(200).json({message: 'Login pass', sessiondata: newSessionData})
+        })
     })
     .catch((error) => {
       res.status(500).json({message: 'Server error', error: error.stack});
@@ -58,7 +66,12 @@ export const login = (req,res) => {
 }
 
 export const logout = (req,res) => {
-  throw new Error('Derp');
+  const sessiondata = req.sessiondata;
+  const newSessionData = Object.assign({},sessiondata,{username:undefined});
+  updateSessionData(sessiondata.sessionid,newSessionData)
+    .then(() => {
+      res.status(200).json({message: 'Logout pass', sessiondata: newSessionData})
+    })
 }
 
 export const register = (req,res) => {
