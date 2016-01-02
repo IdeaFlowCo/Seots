@@ -66,16 +66,26 @@ export const CollectionOperations = (collectionName) => {return {
         } else {
           return db
             .collection(collectionName)
-            .updateOne(
-              {id : doc.id},
-              {$set: doc, $setOnInsert: {creationTime: Date.now()}, $inc: {version: 1}},
-              {upsert: true}
-            )
+            .findOne({id: doc.id})
+            .then((existingDoc) => {
+              if(!existingDoc || !existingDoc.acl || existingDoc.acl.owner == doc.acl.owner) {
+                return Promise.resolve();
+              } else {
+                // TODO: write a test for this
+                return Promise.reject(new Error('Different owner!'))
+              }
+            })
+            .then(() => {
+              return db
+                .collection(collectionName)
+                .updateOne(
+                  {id : doc.id},
+                  {$set: doc, $setOnInsert: {creationTime: Date.now()}, $inc: {version: 1}},
+                  {upsert: true}
+                )
+            })
         }
       })
-  },
-  insertOne: (doc) => {
-    
   },
   getRekt: () => {
     return dbPromise
@@ -103,7 +113,6 @@ export const CustomizeCollectionApi = (collectionName,hydrate=identity,serialize
     })
     .post('/upsertOne/', (req,res) => {
       let doc = serialize(req.body);
-      // TODO: Stop overwriting
       doc = AccessControl.addACLToDoc(doc,req.sessiondata);
       console.log('Upserting', doc);
       operations.upsertOne(doc)

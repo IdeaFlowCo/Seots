@@ -16,7 +16,7 @@ export const session = (req,res,next) => {
   let sessionid = req.cookies['sessionid'];
   if(sessionid === undefined) {
     sessionid = uuid.v4();
-    res.cookie('sessionid',sessionid,{ expires: new Date(Date.now() + 1000*60*15), httpOnly: true })
+    res.cookie('sessionid',sessionid,{ expires: new Date(Date.now() + 1000*60*75), httpOnly: true })
   }
   findSessionData(sessionid)
     .then((sessiondata) => {
@@ -37,6 +37,9 @@ export const session = (req,res,next) => {
 
 export const login = (req,res) => {
   const {username,password} = req.body;
+  if(!username || !password || username.constructor !== String || password.constructor !== String) {
+    res.status(401).json({message: 'Invalid input'})
+  }
   dbPromise
     .then((db) => {
       return db
@@ -48,10 +51,12 @@ export const login = (req,res) => {
       if(users.length > 1) throw new Error('Catastrophy!');
       if(users.length == 0) {
         res.status(403).json({message: 'Incorrect username or password'});
+        return;
       };
       const user = users[0];
 
       const sessiondata = req.sessiondata;
+      console.log('username',username);
       const newSessionData = Object.assign({},sessiondata,{
         username
       });
@@ -76,6 +81,9 @@ export const logout = (req,res) => {
 
 export const register = (req,res) => {
   const {username,password} = req.body;
+  if(!username || !password || username.constructor !== String || password.constructor !== String) {
+    res.status(401).json({message: 'Invalid input'})
+  }
   const userObject = {
     id: uuid.v4(),
     username,
