@@ -9,7 +9,7 @@ var nodes = require('./hinodes')
         text: node.slug
       }
     }
-  }).slice(0,100);
+  });
 var edges = require('./hiedges')
   .map((edge) => {
     return {
@@ -20,7 +20,7 @@ var edges = require('./hiedges')
         text: edge.text
       }
     }
-  }).slice(0,100);
+  });
 
 console.log('edges: ',edges.length);
 console.log('nodes: ',nodes.length);
