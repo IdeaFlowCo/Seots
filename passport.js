@@ -4,8 +4,7 @@ import { Strategy as LocalStrategy } from 'passport-local'
 import { Strategy as FacebookTokenStrategy } from 'passport-facebook-token'
 import bcrypt from 'bcryptjs'
 import dbPromise from './db'
-// import {facebook as fbConfig} from '../config/config.js'
-
+// import {facebook as fbConfig} from '../config/config.js' //TODO implement
 
 // =========================================================================
 // passport session setup ==================================================
@@ -14,26 +13,22 @@ import dbPromise from './db'
 // passport needs ability to serialize and unserialize users out of session
 
 // used to serialize the user for the session
-passport.serializeUser(function(user, done) {
-  done(null, user.id);
+passport.serializeUser(function(user, callback) {
+  callback(null, user.id);
 });
 
 // used to deserialize the user (used when checking session)
-passport.deserializeUser(function(id, done) {
-  userModel.getters.getUserPageById(id)
-    .then(  
-      function(result){
-        const userInfo = {
-          id: result.user.id, 
-          display_name: result.user.displayName, 
-          email: result.user.email, 
-          upvotedGestaltIds: result.upvotedGestaltIds,
-        }
-        done(null, userInfo);
-      }, function(error){
-        return res.json(error);
-      }
-    );
+passport.deserializeUser(function(id, callback) {
+  dbPromise
+    .then((db) => {
+      return db
+        .collection('users')
+        .findOne({id})
+    })
+    .then((user) => {
+      if(!user) return callback({error:'No such user'}, null);
+      return callback(null, user);
+    })
 });
 
 // =========================================================================

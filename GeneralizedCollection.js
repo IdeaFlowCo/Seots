@@ -108,12 +108,12 @@ export const CustomizeCollectionApi = (collectionName,hydrate=identity,serialize
     .post('/fetch/', (req,res) => {
       operations.fetch(req.body)
         .then((docs) => docs.map(hydrate))
-        .then((docs) => AccessControl.filter(docs,req.sessiondata))
+        // .then((docs) => AccessControl.filter(docs,req.sessiondata))
         .then(...apiExproseFromPromise(req,res));
     })
     .post('/upsertOne/', (req,res) => {
       let doc = serialize(req.body);
-      doc = AccessControl.addACLToDoc(doc,req.sessiondata);
+      // doc = AccessControl.addACLToDoc(doc,req.sessiondata);
       console.log('Upserting', doc);
       operations.upsertOne(doc)
         .then(...apiExproseFromPromise(req,res));

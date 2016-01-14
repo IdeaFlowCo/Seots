@@ -42,6 +42,7 @@ export const register = (req,res) => {
   })(req, res);
 }
 
+// TODO move these functions somewhere else? Might be needed by more files.
 const findUser = (username) => {
   return dbPromise
   .then((db) => {
