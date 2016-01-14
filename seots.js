@@ -15,25 +15,13 @@ app.use('/*', CookieParser());
 import * as Auth from './Auth'
 import dbPromise from './db'
 import bodyParser from 'body-parser'
-import cookieParser from 'cookie-parser'
 import session from 'express-session'
 const MongoStore = require('connect-mongo')(session)
 
 
 const authRouter = express.Router();
-
 authRouter
-
   .use(bodyParser.json())
-  .use(bodyParser.urlencoded({ extended: false }))
-  .use(cookieParser("somesecretthatweprovideTODO"))
-  .use(session({
-    secret: 'yetanothersecret',
-    store: new MongoStore({url: config.dbUrl})
-	}))
-
-	//TODO include passport stuff here
-
   .post('/login', Auth.login)
   .post('/register', Auth.register)
   .get('/logout', Auth.logout)
@@ -41,7 +29,10 @@ authRouter
     res.status(200).json(req.sessiondata);
   })
 
-app.use(Auth.session)
+app.use(session({
+  secret: 'yetanothersecret',
+  store: new MongoStore({url: config.dbUrl})
+}));
 app.use('/auth', authRouter);
 
 app.use('/persistence/boards', CustomizeCollectionApi('boards'));

@@ -1,4 +1,10 @@
 {
   "dbUrl": "mongodb://localhost/seots_data",
-  "version": "1.0.0"
+  "version": "1.0.0",
+
+  "facebook": 
+    {
+      "appId": "456028147939173",
+      "appSecret": "d51bf24e002e4b2da4919f1ebdf3596f"
+    }
 }
