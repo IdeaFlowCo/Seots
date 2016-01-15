@@ -39,12 +39,12 @@ passport.deserializeUser(function(id, callback) {
 passport.use(
   'local-signup',
   new LocalStrategy({
-      usernameField : 'email',
+      usernameField : 'username',
       passwordField : 'password',
       passReqToCallback : true // allows us to pass back the entire request to the callback
   },
-  function(req, email, password, callback){
-    const username = req.body.username
+  function(req, username, password, callback){
+    const email = req.body.email
 
     const salt = bcrypt.genSaltSync(10)
     const passwordHash = bcrypt.hashSync(password, salt)
@@ -64,8 +64,7 @@ passport.use(
           .toArray()
       })
       .then((users) => {
-        if (users.length > 0) return callback({message: 'That email is already being used.'});
-
+        if (users.length > 0) return callback(null, false, 'That email is already being used.');
         dbPromise
           .then((db) => {
             return db
@@ -74,7 +73,7 @@ passport.use(
               .toArray()
           })
           .then((users) => {
-            if (users.length > 0) return callback({message: 'That username is already being used.'});
+            if (users.length > 0) return callback(null, false, 'That username is already being used.');
 
             dbPromise
               .then((db) => {
@@ -83,14 +82,14 @@ passport.use(
                   .insertOne(userObject)
               })
               .then((result) => {
-                if(result.insertedCount == 1) {
-                  callback({user: userObject});
+                if(result.insertedCount === 1) {
+                  callback(null, userObject);
                 } else {
                   return Promise.reject({error: (new Error("fail"))});
                 }
               })
               .catch((error) => {
-                callback({error: error.stack});
+                callback(error.stack);
               })
           })
       })

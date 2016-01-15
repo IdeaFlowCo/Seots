@@ -3,13 +3,14 @@ sms.install()
 
 import express from 'express'
 import config from './config'
+import passport from './passport'
 
 const app = express();
 
 import {CustomizeCollectionApi} from './GeneralizedCollection'
-import CookieParser from 'cookie-parser'
+import cookieParser from 'cookie-parser'
 
-app.use('/*', CookieParser());
+app.use('/*', cookieParser());
 
 // Auth
 import * as Auth from './Auth'
@@ -25,14 +26,14 @@ authRouter
   .post('/login', Auth.login)
   .post('/register', Auth.register)
   .get('/logout', Auth.logout)
-  .get('/sessiondata', (req,res) => {
-    res.status(200).json(req.sessiondata);
-  })
+  .get('/sessiondata', Auth.session)
 
 app.use(session({
   secret: 'yetanothersecret',
   store: new MongoStore({url: config.dbUrl})
 }));
+app.use(passport.initialize());
+app.use(passport.session());
 app.use('/auth', authRouter);
 
 app.use('/persistence/boards', CustomizeCollectionApi('boards'));

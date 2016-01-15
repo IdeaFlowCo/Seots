@@ -8,13 +8,13 @@ export const login = (req,res) => {
     res.status(401).json({message: 'Invalid input'})
   }
 
-  passport.authenticate('local-login', function(result) {
-    if (result.message) return res.status(403).json(result)
-    if (result.error) return res.status(500).json({message: 'Server error', error: result.error.stack})
-    req.logIn(result.user, function(error) {
+  passport.authenticate('local-login', function(error, user, info) {
+    if (error) return res.status(500).json({message: 'Passport error', error: error})
+    if (!user) return res.status(403).json({message: info})
+
+    req.logIn(user, function(error) {
       if (error) { return res.status(500).json({message: 'Server error', error: error.stack})}
-      return res.json(user); 
-      return res.status(200).json({message: 'Login pass'})
+      return res.status(200).json({message: 'Login pass', user: user})
     });
   })(req, res);
 }
@@ -26,20 +26,26 @@ export const logout = (req,res) => {
 }
 
 export const register = (req,res) => {
-  const {username,password} = req.body;
+  const {username,email,password} = req.body;
+
   if(!username || !password || username.constructor !== String || password.constructor !== String) {
     res.status(401).json({message: 'Invalid input'})
   }
 
-  passport.authenticate('local-signup', function(result) {
-    if (result.message) return res.status(403).json(result)
-    if (result.error) return res.status(500).json({message: 'Server error', error: result.error.stack})
-    req.logIn(result.user, function(error) {
+  passport.authenticate('local-signup', function(error, user, info) {
+    if (error) return res.status(500).json({message: 'Passport error', error: error})
+    if (!user) return res.status(403).json({message: info})
+
+    req.logIn(user, function(error) {
       if (error) { return res.status(500).json({message: 'Server error', error: error.stack})}
-      return res.json(user); 
-      return res.status(200).json({message: 'Signup pass'})
+      return res.status(200).json({message: 'Signup pass', user: user})
     });
   })(req, res);
+}
+
+export const session = (req,res) => {
+  var user = req.isAuthenticated() ? req.user : null;
+  return res.status(200).json(user);
 }
 
 // TODO move these functions somewhere else? Might be needed by more files.
