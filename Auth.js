@@ -9,7 +9,7 @@ export const login = (req,res) => {
   }
 
   passport.authenticate('local-login', function(error, user, info) {
-    if (error) return res.status(500).json({message: 'Passport error', error: error})
+    if (error) return res.status(500).json({message: 'Server/Passport error', error: error})
     if (!user) return res.status(403).json({message: info})
 
     req.logIn(user, function(error) {
@@ -33,7 +33,7 @@ export const register = (req,res) => {
   }
 
   passport.authenticate('local-signup', function(error, user, info) {
-    if (error) return res.status(500).json({message: 'Passport error', error: error})
+    if (error) return res.status(500).json({message: 'Server/Passport error', error: error})
     if (!user) return res.status(403).json({message: info})
 
     req.logIn(user, function(error) {

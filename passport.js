@@ -106,31 +106,31 @@ passport.use(
 passport.use( 
   'local-login',
   new LocalStrategy({
-    usernameField : 'email',
+    usernameField : 'username',
     passwordField : 'password',
     passReqToCallback : true
   },
-  function(req, email, password, callback) {
+  function(req, username, password, callback) {
     dbPromise
       .then((db) => {
         return db
           .collection('users')
-          .find({email})
+          .find({username})
           .toArray()
       })
       .then((users) => {
-        if(users.length > 1) throw new Error('Catastrophy! - more than 1 user with email: ' + email);
+        if(users.length > 1) throw new Error('Catastrophy! - more than 1 user with username: ' + username);
         if(users.length === 0) {
-          return callback({message: 'Incorrect username or password'});
+          return callback(null, false, 'Incorrect username or password');
         };
 
         const user = users[0];
 
         if (!bcrypt.compareSync(password, user.password)){
-          callback({message: 'Incorrect password'});
+          callback(null, false, 'Incorrect password');
           return;
         }
-        callback({user});
+        callback(null, user);
       })
   })
 );
