@@ -63,6 +63,12 @@ export const CollectionOperations = (collectionName) => {return {
           return db
             .collection(collectionName)
             .insertOne(doc)
+            .then((dbRes) => {
+              return {
+                dbRes,
+                id: doc.id
+              }
+            })
         } else {
           return db
             .collection(collectionName)
@@ -83,6 +89,12 @@ export const CollectionOperations = (collectionName) => {return {
                   {$set: doc, $setOnInsert: {creationTime: Date.now()}, $inc: {version: 1}},
                   {upsert: true}
                 )
+            })
+            .then((dbRes) => {
+              return {
+                dbRes,
+                id: doc.id
+              }
             })
         }
       })
