@@ -65,8 +65,9 @@ export const CollectionOperations = (collectionName) => {return {
             .insertOne(doc)
             .then((dbRes) => {
               return {
-                dbRes,
-                id: doc.id
+                id: doc.id,
+                outcome: 'insert',
+                result: dbRes.result,
               }
             })
         } else {
@@ -91,9 +92,11 @@ export const CollectionOperations = (collectionName) => {return {
                 )
             })
             .then((dbRes) => {
+              const outcome = (dbRes.result.nModified > 0) ? 'update' : 'insert';
               return {
-                dbRes,
-                id: doc.id
+                id: doc.id,
+                outcome,
+                result: dbRes.result,
               }
             })
         }
