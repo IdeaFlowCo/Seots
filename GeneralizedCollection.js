@@ -38,79 +38,127 @@ export const apiExproseFromPromise = (req,res) => {
   ];
 }
 
-export const CollectionOperations = (collectionName) => {return {
-  fetch: (criteria) => {
+export const CollectionOperations = (collectionName) => {
+
+  const insertOne = (doc,{preserveId}={preserveId:false}) => {
+    if(!!doc.id && !preserveId) {
+      console.warn('Inserting a document with an id', doc.id, '(it is being overwritten)');
+    };
+    const normalizedDoc = Object.assign({},doc,{
+      id: (preserveId ? doc.id : undefined) || uuid.v4() ,
+      creationTime: Date.now(),
+      version: 0,
+    });
     return dbPromise
       .then((db) => {
         return db
           .collection(collectionName)
-          .find(criteria || {})
-          .sort({creationTime : 1})
-          .toArray();
-      })
-  },
-  upsertOne: (doc) => {
-    return dbPromise
-      .then((db) => {
-        delete doc._id;
-        delete doc.version;
-        delete doc.creationTime;
-        doc.modificationTime = Date.now();
-        if(doc.id === undefined) {
-          doc.id = uuid.v4();
-          doc.creationTime = Date.now();
-          doc.version = 0;
+          .insertOne(normalizedDoc)
+          .then((dbRes) => {
+            return {
+              id: normalizedDoc.id,
+              outcome: 'insert',
+              result: dbRes.result,
+            }
+          })
+      });
+  };
+
+  const removeProtectedProperties = (doc) => {
+    const newDoc = Object.assign({},doc);
+    delete newDoc._id;
+    delete newDoc.version;
+    delete newDoc.creationTime;
+    delete newDoc.modificationTime;
+    return newDoc;
+  };
+
+  return {
+    fetch: (criteria) => {
+      return dbPromise
+        .then((db) => {
           return db
             .collection(collectionName)
-            .insertOne(doc)
-            .then((dbRes) => {
-              return {
-                id: doc.id,
-                outcome: 'insert',
-                result: dbRes.result,
-              }
-            })
-        } else {
+            .find(criteria || {})
+            .sort({creationTime : 1})
+            .toArray();
+        })
+    },
+    insertOne: insertOne,
+
+    upsertOne: async (doc) => {
+      const db = await dbPromise;
+      const adjustedDoc = removeProtectedProperties(doc);
+      adjustedDoc.modificationTime = Date.now();
+      if(adjustedDoc.id === undefined) {
+        return insertOne(adjustedDoc);
+      }
+      const existingDoc = await db
+        .collection(collectionName)
+        .findOne({id: adjustedDoc.id})
+      if(!existingDoc) {
+        return insertOne(adjustedDoc,{preserveId:true});
+      };
+      if(!!existingDoc.acl && existingDoc.acl.owner != adjustedDoc.acl.owner) {
+        // TODO: write a test for this
+        return Promise.reject(new Error('Different owner!'))
+      };
+
+      const dbRes = await db
+        .collection(collectionName)
+        .updateOne(
+          {id : adjustedDoc.id},
+          {$set: adjustedDoc, $inc: {version: 1}}
+        );
+      const outcome = (dbRes.result.nModified > 0) ? 'update' : 'failure';
+      return {
+        id: adjustedDoc.id,
+        outcome,
+        result: dbRes.result,
+      };
+    },
+    compareVersionAndSet: async (doc) => {
+      const db = await dbPromise;
+      const oldVersion = doc.version;
+      const adjustedDoc = removeProtectedProperties(doc);
+      adjustedDoc.modificationTime = Date.now();
+      if(adjustedDoc.id === undefined) {
+        return insertOne(adjustedDoc);
+      }
+      const existingDoc = await db
+        .collection(collectionName)
+        .findOne({id: adjustedDoc.id})
+      if(!existingDoc) {
+        return insertOne(adjustedDoc,{preserveId:true});
+      };
+      if(!!existingDoc.acl && existingDoc.acl.owner != adjustedDoc.acl.owner) {
+        // TODO: write a test for this
+        return Promise.reject(new Error('Different owner!'))
+      };
+
+      const dbRes = await db
+        .collection(collectionName)
+        .updateOne(
+          {id : adjustedDoc.id, version: oldVersion},
+          {$set: adjustedDoc, $inc: {version: 1}}
+        );
+      const outcome = (dbRes.result.nModified > 0) ? 'update' : 'failure';
+      return {
+        id: adjustedDoc.id,
+        outcome,
+        result: dbRes.result,
+      };
+    },
+    getRekt: () => {
+      return dbPromise
+        .then((db) => {
           return db
             .collection(collectionName)
-            .findOne({id: doc.id})
-            .then((existingDoc) => {
-              if(!existingDoc || !existingDoc.acl || existingDoc.acl.owner == doc.acl.owner) {
-                return Promise.resolve();
-              } else {
-                // TODO: write a test for this
-                return Promise.reject(new Error('Different owner!'))
-              }
-            })
-            .then(() => {
-              return db
-                .collection(collectionName)
-                .updateOne(
-                  {id : doc.id},
-                  {$set: doc, $setOnInsert: {creationTime: Date.now()}, $inc: {version: 1}},
-                  {upsert: true}
-                )
-            })
-            .then((dbRes) => {
-              const outcome = (dbRes.result.nModified > 0) ? 'update' : 'insert';
-              return {
-                id: doc.id,
-                outcome,
-                result: dbRes.result,
-              }
-            })
-        }
-      })
-  },
-  getRekt: () => {
-    return dbPromise
-      .then((db) => {
-        return db
-          .collection(collectionName)
-          .remove({})
-      })
-  },
-}}
+            .remove({})
+        })
+    },
+  };
+}
 
 const identity = (a) => a;
 
@@ -131,6 +179,13 @@ export const CustomizeCollectionApi = (collectionName,hydrate=identity,serialize
       doc = AccessControl.addACLToDoc(doc,req.sessiondata);
       console.log('Upserting', doc);
       operations.upsertOne(doc)
+        .then(...apiExproseFromPromise(req,res));
+    })
+    .post('/compareVersionAndSet/', (req,res) => {
+      let doc = serialize(req.body);
+      doc = AccessControl.addACLToDoc(doc,req.sessiondata);
+      console.log('compareVersionAndSet', doc);
+      operations.compareVersionAndSet(doc)
         .then(...apiExproseFromPromise(req,res));
     })
     .post('/getRekt/', (req,res) => {

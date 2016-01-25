@@ -9,7 +9,7 @@ Object.keys(package.dependencies).forEach((mod) => {
 module.exports = {
   context: __dirname,
   entry: {
-    seots: './seots'
+    seots: ['babel-polyfill', './seots']
   },
   target: "node",
   output: {
@@ -27,7 +27,7 @@ module.exports = {
         exclude: /node_modules/,
         loader: 'babel',
         query: {
-          presets: ['es2015']
+          presets: ['es2015','stage-0']
         }
       },
       {
