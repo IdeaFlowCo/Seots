@@ -15,18 +15,7 @@ export const callbackFunctionToPromise = (fn) => {
   })
 }
 
-export const apiExposePromise = (promise,req,res) => {
-  return promise
-    .then((result) => {
-      res.status(200).json(result);
-    })
-    .catch((error) => {
-      console.log('Error', error, error.stack);
-      res.status(500).json(error);
-    })
-}
-
-export const apiExproseFromPromise = (req,res) => {
+export const apiExposeFromPromise = (req,res) => {
   return [
     (result) => {
       res.status(200).json(result);
@@ -139,13 +128,15 @@ export const CollectionOperations = (collectionName) => {
       const dbRes = await db
         .collection(collectionName)
         .updateOne(
-          {id : adjustedDoc.id, version: oldVersion},
+          {id : adjustedDoc.id, version: oldVersion, 'acl.owner': adjustedDoc.acl.owner},
           {$set: adjustedDoc, $inc: {version: 1}}
         );
-      const outcome = (dbRes.result.nModified > 0) ? 'update' : 'failure';
+      if(dbRes.result.nModified == 0) {
+        return Promise.reject(new Error('wrong version or owner!'))
+      }
       return {
         id: adjustedDoc.id,
-        outcome,
+        outcome: 'update',
         result: dbRes.result,
       };
     },
@@ -172,24 +163,24 @@ export const CustomizeCollectionApi = (collectionName,hydrate=identity,serialize
       operations.fetch(req.body)
         .then((docs) => docs.map(hydrate))
         .then((docs) => AccessControl.filter(docs,req.sessiondata))
-        .then(...apiExproseFromPromise(req,res));
+        .then(...apiExposeFromPromise(req,res));
     })
     .post('/upsertOne/', (req,res) => {
       let doc = serialize(req.body);
       doc = AccessControl.addACLToDoc(doc,req.sessiondata);
       console.log('Upserting', doc);
       operations.upsertOne(doc)
-        .then(...apiExproseFromPromise(req,res));
+        .then(...apiExposeFromPromise(req,res));
     })
     .post('/compareVersionAndSet/', (req,res) => {
       let doc = serialize(req.body);
       doc = AccessControl.addACLToDoc(doc,req.sessiondata);
       console.log('compareVersionAndSet', doc);
       operations.compareVersionAndSet(doc)
-        .then(...apiExproseFromPromise(req,res));
+        .then(...apiExposeFromPromise(req,res));
     })
     .post('/getRekt/', (req,res) => {
       operations.getRekt()
-        .then(...apiExproseFromPromise(req,res));
+        .then(...apiExposeFromPromise(req,res));
     })
 }
