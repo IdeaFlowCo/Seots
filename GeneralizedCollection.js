@@ -140,6 +140,25 @@ export const CollectionOperations = (collectionName) => {
         result: dbRes.result,
       };
     },
+    deleteOne: async (doc) => {
+      const db = await dbPromise;
+      const dbRes = await db
+        .collection(collectionName)
+        .deleteOne({id: doc.id,'acl.owner': doc.acl.owner})
+      if(dbRes.result.deletedCount == 1) {
+        return {
+          id: doc.id,
+          outcome: 'removed',
+          result: dbRes.result,
+        };
+      } else {
+        return {
+          id: doc.id,
+          outcome: 'nonexistent',
+          result: dbRes.result,
+        };
+      }
+    },
     getRekt: () => {
       return dbPromise
         .then((db) => {
@@ -177,6 +196,13 @@ export const CustomizeCollectionApi = (collectionName,hydrate=identity,serialize
       doc = AccessControl.addACLToDoc(doc,req.sessiondata);
       console.log('compareVersionAndSet', doc);
       operations.compareVersionAndSet(doc)
+        .then(...apiExposeFromPromise(req,res));
+    })
+    .post('/deleteOne/', (req,res) => {
+      let doc = serialize(req.body);
+      doc = AccessControl.addACLToDoc(doc,req.sessiondata);
+      console.log('Deleting', doc);
+      operations.deleteOne(doc)
         .then(...apiExposeFromPromise(req,res));
     })
     .post('/getRekt/', (req,res) => {
