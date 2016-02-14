@@ -6,7 +6,8 @@ import config from './config'
 
 const app = express();
 
-import {CustomizeCollectionApi} from './GeneralizedCollection'
+import {CustomizeCollectionRouter} from './GeneralizedCollection'
+import FilesRouter from './FilesRouter'
 import CookieParser from 'cookie-parser'
 
 app.use('/*', CookieParser());
@@ -29,11 +30,12 @@ authRouter
 app.use(Auth.session)
 app.use('/auth', authRouter);
 
-app.use('/persistence/boards', CustomizeCollectionApi('boards'));
-app.use('/persistence/gestalts', CustomizeCollectionApi('gestalts'));
-app.use('/persistence/connections', CustomizeCollectionApi('connections'));
-app.use('/persistence/layouts', CustomizeCollectionApi('layouts'));
-app.use('/persistence/users', CustomizeCollectionApi('users'));
+app.use('/persistence/boards', CustomizeCollectionRouter('boards'));
+app.use('/persistence/gestalts', CustomizeCollectionRouter('gestalts'));
+app.use('/persistence/connections', CustomizeCollectionRouter('connections'));
+app.use('/persistence/layouts', CustomizeCollectionRouter('layouts'));
+app.use('/persistence/users', CustomizeCollectionRouter('users'));
+app.use('/persistence/files', FilesRouter);
 
 app.get('/version', (req,res) => {
   res.status(200).json({version: config.version})
