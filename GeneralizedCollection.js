@@ -5,27 +5,7 @@ import uuid from 'uuid'
 import bodyParser from 'body-parser'
 import {Router} from 'express'
 
-export const callbackFunctionToPromise = (fn) => {
-  return new Promise((resolve,reject) => {
-    fn((error,result) => {
-      console.log('back')
-      if(!!error) return reject(error);
-      resolve(result);
-    })
-  })
-}
-
-export const apiExposeFromPromise = (req,res) => {
-  return [
-    (result) => {
-      res.status(200).json(result);
-    },
-    (error) => {
-      console.log('Error', error, error.stack);
-      res.status(500).json(error);
-    }
-  ];
-}
+import {exposePromise} from './ExposePromise'
 
 export const CollectionOperations = (collectionName) => {
 
@@ -174,39 +154,39 @@ const identity = (a) => a;
 
 import * as AccessControl from './AccessControl'
 
-export const CustomizeCollectionApi = (collectionName,hydrate=identity,serialize=identity) => {
+export const CustomizeCollectionRouter = (collectionName,hydrate=identity,serialize=identity) => {
   const operations = CollectionOperations(collectionName);
   return Router()
     .use(bodyParser.json())
     .post('/fetch/', (req,res) => {
-      operations.fetch(req.body)
+      const promise = operations.fetch(req.body)
         .then((docs) => docs.map(hydrate))
-        .then((docs) => AccessControl.filter(docs,req.sessiondata))
-        .then(...apiExposeFromPromise(req,res));
+        .then((docs) => AccessControl.filter(docs,req.sessiondata));
+      exposePromise(promise)(req,res);
     })
     .post('/upsertOne/', (req,res) => {
       let doc = serialize(req.body);
       doc = AccessControl.addACLToDoc(doc,req.sessiondata);
       console.log('Upserting', doc);
-      operations.upsertOne(doc)
-        .then(...apiExposeFromPromise(req,res));
+      const promise = operations.upsertOne(doc);
+      exposePromise(promise)(req,res);
     })
     .post('/compareVersionAndSet/', (req,res) => {
       let doc = serialize(req.body);
       doc = AccessControl.addACLToDoc(doc,req.sessiondata);
       console.log('compareVersionAndSet', doc);
-      operations.compareVersionAndSet(doc)
-        .then(...apiExposeFromPromise(req,res));
+      const promise = operations.compareVersionAndSet(doc);
+      exposePromise(promise)(req,res);
     })
     .post('/deleteOne/', (req,res) => {
       let doc = serialize(req.body);
       doc = AccessControl.addACLToDoc(doc,req.sessiondata);
       console.log('Deleting', doc);
-      operations.deleteOne(doc)
-        .then(...apiExposeFromPromise(req,res));
+      const promise = operations.deleteOne(doc);
+      exposePromise(promise)(req,res);
     })
     .post('/getRekt/', (req,res) => {
-      operations.getRekt()
-        .then(...apiExposeFromPromise(req,res));
+      const promise = operations.getRekt();
+      exposePromise(promise)(req,res);
     })
 }
