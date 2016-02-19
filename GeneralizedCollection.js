@@ -53,6 +53,17 @@ export const CollectionOperations = (collectionName) => {
       })
   };
 
+  const fetchOne = async (criteria) => {
+    const results = await fetch(criteria);
+    if (results.length == 0) {
+      return undefined;
+    } else if (results.length > 1) {
+      throw new Error("Too many results for", criteria);
+    } else {
+      return results[0];
+    }
+  };
+
   const upsertOne = async (doc) => {
     const db = await dbPromise;
     const adjustedDoc = removeProtectedProperties(doc);
@@ -149,6 +160,7 @@ export const CollectionOperations = (collectionName) => {
 
   return {
     fetch,
+    fetchOne,
     insertOne,
     upsertOne,
     compareVersionAndSet,

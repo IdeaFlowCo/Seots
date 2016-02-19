@@ -44,18 +44,20 @@ export const UpvoteOperations = () => {
   };
 
   const handleUnvote = async (gestaltId, username) => {
-    const currentGestalt = await gestaltOps.fetch({id: gestaltId});
-    const currentUpvote = await upvoteOps.deleteOne(getUpvote(gestaltId, username));
-    if (!currentUpvote.outcome.removed) {
+    const currentGestalt = await gestaltOps.fetchOne({id: gestaltId});
+    const currentUpvote = await upvoteOps.fetchOne({gestaltId, username});
+    console.log(currentUpvote, currentGestalt);
+    if (currentUpvote === undefined) {
       return {
         id: gestaltId,
         outcome: 'failure',
         cause: 'No upvote to unvote'
       }
     }
+    const deletedVote = await upvoteOps.deleteOne(currentUpvote);
     currentGestalt.upvotes -= 1;
     const updatedGestalt = await gestaltOps.upsertOne(currentGestalt);
-    if (!updatedGestalt.outcome.update) {
+    if (updatedGestalt.outcome != 'update') {
       return {
         id: gestaltId,
         outcome: 'failure',
@@ -73,12 +75,12 @@ export const UpvoteOperations = () => {
 export default Router()
   .post('/upvote/:gestaltId', (req, res) => {
     const gestaltId = req.params['gestaltId'];
-    const username = req.sessiondata.username;
+    const username = "helloo";//req.sessiondata.username;
     const promise = UpvoteOperations().handleUpvote(gestaltId, username);
     exposePromise(promise)(req, res);
   }).post('/unvote/:gestaltId', (req, res) => {
     const gestaltId = req.params['gestaltId'];
-    const username = req.sessiondata.username;
+    const username = "helloo"//req.sessiondata.username;
     const promise = UpvoteOperations().handleUnvote(gestaltId, username);
     exposePromise(promise)(req, res);
   });
