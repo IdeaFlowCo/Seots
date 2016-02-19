@@ -7,30 +7,45 @@ import {Router} from 'express'
 
 import {exposePromise} from './ExposePromise'
 
-export const CollectionOperations = (collectionName) => {
-
-  const insertOne = (doc,{preserveId}={preserveId:false}) => {
+export const CollectionOperations = function(collectionName,hooks={}) {
+  const insertOne = async function(doc,{preserveId}={preserveId:false}) {
+    if(hooks.verifyDocumentCorectness) {
+      const errorMessage = await hooks.verifyDocumentCorectness.call(operations,doc);
+      if(!!errorMessage) {
+        return {outcome: 'error', errorMessage};
+      }
+    }
+    if(hooks.shouldInsert) {
+      const shouldInsert = await hooks.shouldInsert.call(operations,doc);
+      if(!shouldInsert) {
+        return {outcome: 'noop'};
+      }
+    }
     if(!!doc.id && !preserveId) {
-      console.warn('Inserting a document with an id', doc.id, '(it is being overwritten)');
+      console.warn(
+        'Inserting a document with an id property set to',
+        doc.id,
+        '- it is being overwritten'
+      );
     };
     const normalizedDoc = Object.assign({},doc,{
       id: (preserveId ? doc.id : undefined) || uuid.v4() ,
       creationTime: Date.now(),
       version: 0,
     });
-    return dbPromise
-      .then((db) => {
-        return db
-          .collection(collectionName)
-          .insertOne(normalizedDoc)
-          .then((dbRes) => {
-            return {
-              id: normalizedDoc.id,
-              outcome: 'insert',
-              result: dbRes.result,
-            }
-          })
-      });
+    const db = await dbPromise;
+    const dbRes = await db
+      .collection(collectionName)
+      .insertOne(normalizedDoc)
+
+    if(hooks.postInsert) {
+      await hooks.postInsert.call(operations,normalizedDoc,dbRes);
+    }
+    return {
+      id: normalizedDoc.id,
+      outcome: 'insert',
+      result: dbRes.result,
+    }
   };
 
   const removeProtectedProperties = (doc) => {
@@ -53,7 +68,13 @@ export const CollectionOperations = (collectionName) => {
       })
   };
 
-  const upsertOne = async (doc) => {
+  const upsertOne = async function(doc) {
+    if(hooks.verifyDocumentCorectness) {
+      const errorMessage = await hooks.verifyDocumentCorectness.call(operations,doc);
+      if(!!errorMessage) {
+        return {outcome: 'error', errorMessage};
+      }
+    }
     const db = await dbPromise;
     const adjustedDoc = removeProtectedProperties(doc);
     adjustedDoc.modificationTime = Date.now();
@@ -147,7 +168,7 @@ export const CollectionOperations = (collectionName) => {
       .remove({});
   };
 
-  return {
+  const operations = {
     fetch,
     insertOne,
     upsertOne,
@@ -155,14 +176,15 @@ export const CollectionOperations = (collectionName) => {
     deleteOne,
     clearCollection
   };
+  return operations;
 }
 
 const identity = (a) => a;
 
 import * as AccessControl from './AccessControl'
 
-export const CustomizeCollectionRouter = (collectionName,hydrate=identity,serialize=identity) => {
-  const operations = CollectionOperations(collectionName);
+export const CustomizeCollectionRouter = (collectionName,hooks,hydrate=identity,serialize=identity) => {
+  const operations = CollectionOperations(collectionName,hooks);
   return Router()
     .use(bodyParser.json())
     .post('/fetch/', (req,res) => {
