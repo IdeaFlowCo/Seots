@@ -39,7 +39,7 @@ app.use('/persistence/gestalts', CustomizeCollectionRouter(CollectionsOperations
 app.use('/persistence/connections', CustomizeCollectionRouter(CollectionsOperations.connections));
 app.use('/persistence/layouts', CustomizeCollectionRouter(CollectionsOperations.layouts));
 app.use('/persistence/users', CustomizeCollectionRouter(CollectionsOperations.users));
-app.use('/persistence/upvotes', UpvotesRouter);
+app.use('/persistence/votes', UpvotesRouter);
 app.use('/persistence/files', FilesRouter);
 
 app.get('/version', (req,res) => {

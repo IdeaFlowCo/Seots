@@ -1,7 +1,11 @@
 import dbPromise from './db'
 
 import uuid from 'uuid'
-
+// hooks:
+// verifyDocumentCorrectness(doc)
+// async shouldInsert(doc)
+// async postUpsert(doc, dbRes)
+// getId(doc)
 export const CollectionOperations = function(collectionName,hooks={}) {
   const insertOne = async function(doc,{preserveId}={preserveId:false}) {
     if(hooks.verifyDocumentCorectness) {
@@ -24,17 +28,18 @@ export const CollectionOperations = function(collectionName,hooks={}) {
       );
     };
     const normalizedDoc = Object.assign({},doc,{
-      id: (preserveId ? doc.id : undefined) || uuid.v4() ,
+      id: (preserveId ? doc.id : undefined) || getId(doc) ,
       creationTime: Date.now(),
       version: 0,
     });
+
     const db = await dbPromise;
     const dbRes = await db
       .collection(collectionName)
-      .insertOne(normalizedDoc)
+      .insertOne(normalizedDoc);
 
-    if(hooks.postInsert) {
-      await hooks.postInsert.call(operations,normalizedDoc,dbRes);
+    if(hooks.postUpsert) {
+      await hooks.postUpsert.call(operations,normalizedDoc,dbRes);
     }
     return {
       id: normalizedDoc.id,
@@ -60,14 +65,26 @@ export const CollectionOperations = function(collectionName,hooks={}) {
           .find(criteria || {})
           .sort({creationTime : 1})
           .toArray();
-      })
+      });
+  };
+
+  const fetchOneById = (id) => {
+    return fetch({id}).then((docs) => docs[0]);
   };
 
   const upsertOne = async function(doc) {
     if(hooks.verifyDocumentCorectness) {
       const errorMessage = await hooks.verifyDocumentCorectness.call(operations,doc);
+      console.log(errorMessage);
       if(!!errorMessage) {
         return {outcome: 'error', errorMessage};
+      }
+    }
+
+    if(hooks.shouldInsert) {
+      const shouldInsert = await hooks.shouldInsert.call(operations,doc);
+      if(!shouldInsert) {
+        return {outcome: 'noop'};
       }
     }
     const db = await dbPromise;
@@ -94,6 +111,9 @@ export const CollectionOperations = function(collectionName,hooks={}) {
         {$set: adjustedDoc, $inc: {version: 1}}
       );
     const outcome = (dbRes.result.nModified > 0) ? 'update' : 'failure';
+    if(hooks.postUpsert) {
+      await hooks.postUpsert.call(operations,adjustedDoc,dbRes);
+    }
     return {
       id: adjustedDoc.id,
       outcome,
@@ -142,6 +162,9 @@ export const CollectionOperations = function(collectionName,hooks={}) {
       .collection(collectionName)
       .deleteOne({id: doc.id,'acl.owner': doc.acl.owner})
     if(dbRes.result.deletedCount == 1) {
+      if (hooks.postDelete) {
+        hooks.postDelete.delete(operations, doc, dbRes);
+      }
       return {
         id: doc.id,
         outcome: 'removed',
@@ -163,8 +186,17 @@ export const CollectionOperations = function(collectionName,hooks={}) {
       .remove({});
   };
 
+  const getId = (doc) => {
+    if (hooks.getId) {
+      return hooks.getId.call(operations, doc);
+    } else {
+      return uuid.v4();
+    }
+  };
+
   const operations = {
     fetch,
+    fetchOneById,
     insertOne,
     upsertOne,
     compareVersionAndSet,
@@ -172,4 +204,4 @@ export const CollectionOperations = function(collectionName,hooks={}) {
     clearCollection
   };
   return operations;
-}
+};
