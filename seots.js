@@ -8,6 +8,7 @@ const app = express();
 
 import {CustomizeCollectionRouter} from './GeneralizedCollection'
 import FilesRouter from './FilesRouter'
+import UpvoteRouter from './UpvoteRouter'
 import CookieParser from 'cookie-parser'
 
 app.use('/*', CookieParser());
@@ -35,6 +36,7 @@ app.use('/persistence/gestalts', CustomizeCollectionRouter('gestalts'));
 app.use('/persistence/connections', CustomizeCollectionRouter('connections'));
 app.use('/persistence/layouts', CustomizeCollectionRouter('layouts'));
 app.use('/persistence/users', CustomizeCollectionRouter('users'));
+app.use('/persistence/upvotes', UpvoteRouter);
 app.use('/persistence/files', FilesRouter);
 
 app.get('/version', (req,res) => {
