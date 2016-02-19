@@ -40,6 +40,7 @@ app.use('/persistence/gestalts', CustomizeCollectionRouter(CollectionsOperations
 app.use('/persistence/connections', CustomizeCollectionRouter(CollectionsOperations.connections));
 app.use('/persistence/layouts', CustomizeCollectionRouter(CollectionsOperations.layouts));
 app.use('/persistence/users', CustomizeCollectionRouter(CollectionsOperations.users));
+app.use('/persistence/people', CustomizeCollectionRouter(CollectionsOperations.people));
 app.use('/persistence/votes', VotesRouter);
 app.use('/persistence/comments', CustomizeCollectionRouter(CommentsCollection));
 app.use('/persistence/files', FilesRouter);
