@@ -15,6 +15,15 @@ export const addACLToDoc = (doc,sessiondata) => {
   return Object.assign({},doc,{acl});
 }
 
+export const ensureUserOr403 = (req, res) => {
+  if (!req.sessiondata.username) {
+    res.status(403).json({message: 'User must be logged in'});
+    return false;
+  } else {
+    return true;
+  }
+}
+
 export const addReadPermission = (doc,owner,username) => {
   if(!doc.acl || doc.acl.owner !== owner) return doc;
   const acl = Object.assign({},doc.acl,{

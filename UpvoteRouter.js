@@ -14,8 +14,8 @@ export const UpvoteOperations = () => {
   };
 
   const handleUpvote = async (gestaltId, username) => {
-    const currentGestalt = await gestaltOps.fetch({id: gestaltId});
-    if (currentGestalt.length == 0) {
+    const currentGestalt = await gestaltOps.fetchOne({id: gestaltId});
+    if (currentGestalt === undefined) {
       return {
         id: gestaltId,
         outcome: 'failure',
@@ -30,7 +30,8 @@ export const UpvoteOperations = () => {
         cause: 'Already upvoted'
       }
     }
-    currentGestalt.upvotes += 1;
+
+    currentGestalt.upvotes = (currentGestalt.upvotes || 0) + 1;
     const updatedGestalt = await gestaltOps.upsertOne(currentGestalt);
     if (updatedGestalt.result.ok != 1) {
       return {
@@ -55,7 +56,7 @@ export const UpvoteOperations = () => {
       }
     }
     const deletedVote = await upvoteOps.deleteOne(currentUpvote);
-    currentGestalt.upvotes -= 1;
+    currentGestalt.upvotes = (currentGestalt.upvotes || 0) - 1;
     const updatedGestalt = await gestaltOps.upsertOne(currentGestalt);
     if (updatedGestalt.outcome != 'update') {
       return {
@@ -74,13 +75,19 @@ export const UpvoteOperations = () => {
 
 export default Router()
   .post('/upvote/:gestaltId', (req, res) => {
+    if (!AccessControl.ensureUserOr403(req, res)) {
+      return;
+    }
     const gestaltId = req.params['gestaltId'];
-    const username = "helloo";//req.sessiondata.username;
+    const username = req.sessiondata.username;
     const promise = UpvoteOperations().handleUpvote(gestaltId, username);
     exposePromise(promise)(req, res);
   }).post('/unvote/:gestaltId', (req, res) => {
+    if (!AccessControl.ensureUserOr403(req, res)) {
+      return;
+    }
     const gestaltId = req.params['gestaltId'];
-    const username = "helloo"//req.sessiondata.username;
+    const username = req.sessiondata.username;
     const promise = UpvoteOperations().handleUnvote(gestaltId, username);
     exposePromise(promise)(req, res);
   });
