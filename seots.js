@@ -6,7 +6,9 @@ import config from './config'
 
 const app = express();
 
-import {CustomizeCollectionRouter} from './GeneralizedCollection'
+import * as CollectionsOperations from './SeotsCollections'
+import {CustomizeCollectionRouter} from './GeneralizedCollectionRouter'
+
 import FilesRouter from './FilesRouter'
 import UpvotesRouter from './UpvotesRouter'
 
@@ -32,11 +34,11 @@ authRouter
 app.use(Auth.session)
 app.use('/auth', authRouter);
 
-app.use('/persistence/boards', CustomizeCollectionRouter('boards'));
-app.use('/persistence/gestalts', CustomizeCollectionRouter('gestalts'));
-app.use('/persistence/connections', CustomizeCollectionRouter('connections'));
-app.use('/persistence/layouts', CustomizeCollectionRouter('layouts'));
-app.use('/persistence/users', CustomizeCollectionRouter('users'));
+app.use('/persistence/boards', CustomizeCollectionRouter(CollectionsOperations.boards));
+app.use('/persistence/gestalts', CustomizeCollectionRouter(CollectionsOperations.gestalts));
+app.use('/persistence/connections', CustomizeCollectionRouter(CollectionsOperations.connections));
+app.use('/persistence/layouts', CustomizeCollectionRouter(CollectionsOperations.layouts));
+app.use('/persistence/users', CustomizeCollectionRouter(CollectionsOperations.users));
 app.use('/persistence/upvotes', UpvotesRouter);
 app.use('/persistence/files', FilesRouter);
 

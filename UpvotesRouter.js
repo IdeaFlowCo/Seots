@@ -1,4 +1,5 @@
-import {CustomizeCollectionRouter} from './GeneralizedCollection'
+import {gestalts} from './SeotsCollections'
+import {CustomizeCollectionRouter} from './GeneralizedCollectionRouter'
 
 export default CustomizeCollectionRouter('upvotes',{
   async verifyDocumentCorectness(doc) {

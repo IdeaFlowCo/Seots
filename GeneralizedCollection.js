@@ -2,11 +2,6 @@ import dbPromise from './db'
 
 import uuid from 'uuid'
 
-import bodyParser from 'body-parser'
-import {Router} from 'express'
-
-import {exposePromise} from './ExposePromise'
-
 export const CollectionOperations = function(collectionName,hooks={}) {
   const insertOne = async function(doc,{preserveId}={preserveId:false}) {
     if(hooks.verifyDocumentCorectness) {
@@ -177,45 +172,4 @@ export const CollectionOperations = function(collectionName,hooks={}) {
     clearCollection
   };
   return operations;
-}
-
-const identity = (a) => a;
-
-import * as AccessControl from './AccessControl'
-
-export const CustomizeCollectionRouter = (collectionName,hooks,hydrate=identity,serialize=identity) => {
-  const operations = CollectionOperations(collectionName,hooks);
-  return Router()
-    .use(bodyParser.json())
-    .post('/fetch/', (req,res) => {
-      const promise = operations.fetch(req.body)
-        .then((docs) => docs.map(hydrate))
-        .then((docs) => AccessControl.filter(docs,req.sessiondata));
-      exposePromise(promise)(req,res);
-    })
-    .post('/upsertOne/', (req,res) => {
-      let doc = serialize(req.body);
-      doc = AccessControl.addACLToDoc(doc,req.sessiondata);
-      console.log('Upserting', doc);
-      const promise = operations.upsertOne(doc);
-      exposePromise(promise)(req,res);
-    })
-    .post('/compareVersionAndSet/', (req,res) => {
-      let doc = serialize(req.body);
-      doc = AccessControl.addACLToDoc(doc,req.sessiondata);
-      console.log('compareVersionAndSet', doc);
-      const promise = operations.compareVersionAndSet(doc);
-      exposePromise(promise)(req,res);
-    })
-    .post('/deleteOne/', (req,res) => {
-      let doc = serialize(req.body);
-      doc = AccessControl.addACLToDoc(doc,req.sessiondata);
-      console.log('Deleting', doc);
-      const promise = operations.deleteOne(doc);
-      exposePromise(promise)(req,res);
-    })
-    .post('/clearCollection/', (req,res) => {
-      const promise = operations.clearCollection();
-      exposePromise(promise)(req,res);
-    })
 }
