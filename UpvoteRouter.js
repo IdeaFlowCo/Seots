@@ -2,6 +2,7 @@ import {CollectionOperations} from './GeneralizedCollection'
 import dbPromise from './db'
 import {Router} from 'express'
 import * as AccessControl from './AccessControl'
+import bodyParser from 'body-parser'
 
 import {exposePromise} from './ExposePromise'
 
@@ -74,7 +75,13 @@ export const UpvoteOperations = () => {
 };
 
 export default Router()
-  .post('/upvote/:gestaltId', (req, res) => {
+  .use(bodyParser.json())
+  .post('/fetch/', (req,res) => {
+    const upvoteOps = CollectionOperations('upvotes');
+    const promise = upvoteOps.fetch(req.body)
+      .then((docs) => AccessControl.filter(docs,req.sessiondata));
+    exposePromise(promise)(req,res);
+  }).post('/upvote/:gestaltId', (req, res) => {
     if (!AccessControl.ensureUserOr403(req, res)) {
       return;
     }
