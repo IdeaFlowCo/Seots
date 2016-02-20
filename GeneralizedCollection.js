@@ -1,10 +1,12 @@
 import dbPromise from './db'
 
 import uuid from 'uuid'
+
 // hooks:
 // verifyDocumentCorrectness(doc)
-// async shouldInsert(doc)
-// async postUpsert(doc, dbRes)
+// shouldInsert(doc)
+// shouldUpdate(doc)
+// postUpsert(doc,dbRes)
 // getId(doc)
 export const CollectionOperations = function(collectionName,hooks={}) {
   const insertOne = async function(doc,{preserveId}={preserveId:false}) {
@@ -81,12 +83,6 @@ export const CollectionOperations = function(collectionName,hooks={}) {
       }
     }
 
-    if(hooks.shouldInsert) {
-      const shouldInsert = await hooks.shouldInsert.call(operations,doc);
-      if(!shouldInsert) {
-        return {outcome: 'noop'};
-      }
-    }
     const db = await dbPromise;
     const adjustedDoc = removeProtectedProperties(doc);
     adjustedDoc.modificationTime = Date.now();
@@ -99,11 +95,18 @@ export const CollectionOperations = function(collectionName,hooks={}) {
     if(!existingDoc) {
       return insertOne(adjustedDoc,{preserveId:true});
     };
+
     if(!!existingDoc.acl && existingDoc.acl.owner != adjustedDoc.acl.owner) {
       // TODO: write a test for this
       return Promise.reject(new Error('Different owner!'))
     };
 
+    if(hooks.shouldUpdate) {
+      const shouldUpdate = await hooks.shouldUpdate.call(operations,doc);
+      if(!shouldUpdate) {
+        return {outcome: 'noop'};
+      }
+    }
     const dbRes = await db
       .collection(collectionName)
       .updateOne(
@@ -119,6 +122,24 @@ export const CollectionOperations = function(collectionName,hooks={}) {
       outcome,
       result: dbRes.result,
     };
+  };
+
+  const ensureTransformation = (id,transformation,retries=20,waitTime=50) => {
+    const attempt = async (retries) => {
+      if(retries == 0) {
+        throw new Error('The CAS operation failed too many times');
+      };
+      const documentInCurrentShape = await fetchOneById(id);
+      if(!documentInCurrentShape) throw new Error('No such document in any shape');
+      const transformedDocumentInCurrentShape = transformation(documentInCurrentShape);
+      try {
+        await compareVersionAndSet(transformedDocumentInCurrentShape)
+      } catch(err) {
+        await new Promise((res,rej) => setTimeout(res,waitTime));
+        await attempt(retries-1);
+      };
+    }
+    return attempt(retries);
   };
 
   const compareVersionAndSet = async (doc) => {
@@ -199,9 +220,11 @@ export const CollectionOperations = function(collectionName,hooks={}) {
     fetchOneById,
     insertOne,
     upsertOne,
+    ensureTransformation,
     compareVersionAndSet,
     deleteOne,
-    clearCollection
+    clearCollection,
+    hooks
   };
   return operations;
 };

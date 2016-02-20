@@ -16,31 +16,37 @@ export default CustomizeCollectionRouter(CollectionOperations('upvotes', {
     }
   },
 
-  getId(doc) {
+  /*getId(doc) {
     return doc.gestaltId + "-" + doc.userId;
-  },
+  },*/
 
   async shouldInsert(doc) {
     const upvotes = await this.fetch({
       userId:doc.userId,
       gestaltId:doc.gestaltId
     });
-    if(upvotes.length > 0 && upvotes[0].vote == doc.vote) return false;
-    if(upvotes.length == 0 && doc.vote == 0) return false;
+    console.log('Upvotes!', upvotes);
+    if(upvotes.length > 0) return false;
+    return true;
+  },
+
+  async shouldUpdate(doc) {
+    //const upvote = await this.fetchOneById(this.hooks.getId(doc.id));
+    const upvote = await this.fetchOneById(doc.id);
+    console.log('Upvote!', upvote);
+    if(upvote === undefined) return false;
+    if(upvote.vote == doc.vote) return false;
     return true;
   },
 
   async postUpsert(doc,dbRes) {
-    const gestalt = await gestalts.fetchOneById(doc.gestaltId);
-    const currentUpvotes = gestalt.upvotes || 0;
-    const delta = () => {
-      if (doc.vote == 0) {
-        return -1;
-      } else {
-        return 1;
-      }
+    const delta = (doc.vote == 0) ? -1 : 1;
+    const transform = (gestalt) => {
+      return Object.assign({}, gestalt, {
+        upvotes: (gestalt.upvotes || 0) + delta
+      })
     };
-    const newGestalt = Object.assign({}, gestalt, {upvotes: currentUpvotes + delta()});
-    return await gestalts.upsertOne(newGestalt);
+
+    return await gestalts.ensureTransformation(doc.gestaltId,transform);
   }
 }));
