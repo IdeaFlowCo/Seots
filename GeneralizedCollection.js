@@ -4,9 +4,9 @@ import uuid from 'uuid'
 // hooks:
 // async verifyDocumentCorrectness(doc)
 // async shouldInsert(doc)
-// async shouldUpdate(doc)
+// async shouldUpdate(existingDoc,adjustedDoc)
 // async postInsert(doc, dbRes)
-// async postUpdate(doc, dbRes)
+// async postUpdate(existingDoc,doc,dbRes)
 // async getId(doc)
 export const CollectionOperations = function(collectionName,hooks={}) {
   const insertOne = async function(doc,{preserveId}={preserveId:false}) {
@@ -94,7 +94,8 @@ export const CollectionOperations = function(collectionName,hooks={}) {
       return Promise.reject(new Error('Different owner!'))
     };
     if(hooks.shouldUpdate) {
-      const shouldUpdate = await hooks.shouldUpdate.call(operations,doc);
+      const shouldUpdate = await hooks.shouldUpdate
+        .call(operations,existingDoc,doc);
       if(!shouldUpdate) {
         return {outcome: 'noop'};
       }
@@ -106,8 +107,9 @@ export const CollectionOperations = function(collectionName,hooks={}) {
         {$set: adjustedDoc, $inc: {version: 1}}
       );
     const outcome = (dbRes.result.nModified > 0) ? 'update' : 'failure';
-    if(hooks.postUpdate) {
-      await hooks.postUpdate.call(operations,adjustedDoc,dbRes);
+    if(hooks.postUpdate && outcome == 'update') {
+      await hooks.postUpdate
+        .call(operations,existingDoc,adjustedDoc,dbRes);
     }
     return {
       id: adjustedDoc.id,
@@ -151,7 +153,7 @@ export const CollectionOperations = function(collectionName,hooks={}) {
     }
     const existingDoc = await db
       .collection(collectionName)
-      .findOne({id: adjustedDoc.id})
+      .findOne({id: adjustedDoc.id,version: oldVersion})
     if(!existingDoc) {
       return insertOne(adjustedDoc,{preserveId:true});
     };
@@ -160,7 +162,8 @@ export const CollectionOperations = function(collectionName,hooks={}) {
       return Promise.reject(new Error('Different owner!'))
     };
     if(hooks.shouldUpdate) {
-      const shouldUpdate = await hooks.shouldUpdate.call(operations,doc);
+      const shouldUpdate = await hooks.shouldUpdate
+        .call(operations,existingDoc,adjustedDoc);
       if(!shouldUpdate) {
         return {outcome: 'noop'};
       }
@@ -171,11 +174,12 @@ export const CollectionOperations = function(collectionName,hooks={}) {
         {id : adjustedDoc.id, version: oldVersion, 'acl.owner': adjustedDoc.acl.owner},
         {$set: adjustedDoc, $inc: {version: 1}}
       );
-    if(hooks.postUpdate) {
-      await hooks.postUpdate.call(operations,adjustedDoc,dbRes);
-    }
     if(dbRes.result.nModified == 0) {
       return Promise.reject(new Error('wrong version or owner!'))
+    }
+    if(hooks.postUpdate == 'update') {
+      await hooks.postUpdate
+        .call(operations,existingDoc,adjustedDoc,dbRes);
     }
     return {
       id: adjustedDoc.id,

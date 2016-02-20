@@ -31,7 +31,7 @@ const postUpsert = async function(doc,dbRes) {
 export default CustomizeCollectionRouter(CollectionOperations('upvotes', {
 
   async verifyDocumentCorectness(doc) {
-    if(!doc.username) return 'No userId defined';
+    if(!doc.username) return 'No username defined';
     if(!doc.gestaltId) return 'No gestaltId defined';
     const matchingGestalt = await gestalts.fetch({id: doc.gestaltId});
     if (matchingGestalt.length != 1) {
@@ -40,17 +40,19 @@ export default CustomizeCollectionRouter(CollectionOperations('upvotes', {
   },
 
   async shouldInsert(doc) {
-    return await shouldPersist.call(this, doc);
+    return await shouldPersist.call(this,doc);
   },
 
-  async shouldUpdate(doc) {
-    return await shouldPersist.call(this, doc);
+  async shouldUpdate(existingDoc,doc) {
+    return await shouldPersist.call(this,doc);
   },
 
-  async postInsert(doc, dbRes) {
-    return await postUpsert.call(this, doc, dbRes)
+  async postInsert(doc,dbRes) {
+    console.log(dbRes);
+    return await postUpsert.call(this,doc,dbRes)
   },
-  async postUpdate(doc, dbRes) {
-    return await postUpsert.call(this, doc, dbRes)
+  async postUpdate(existingDoc,doc,dbRes) {
+    console.log(dbRes);
+    return await postUpsert.call(this,doc,dbRes)
   },
 }));
