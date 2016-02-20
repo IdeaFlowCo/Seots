@@ -10,7 +10,7 @@ import * as CollectionsOperations from './SeotsCollections'
 import {CustomizeCollectionRouter} from './GeneralizedCollectionRouter'
 
 import FilesRouter from './FilesRouter'
-import UpvotesRouter from './UpvotesRouter'
+import VotesRouter from './VotesRouter'
 
 import CookieParser from 'cookie-parser'
 
@@ -39,7 +39,7 @@ app.use('/persistence/gestalts', CustomizeCollectionRouter(CollectionsOperations
 app.use('/persistence/connections', CustomizeCollectionRouter(CollectionsOperations.connections));
 app.use('/persistence/layouts', CustomizeCollectionRouter(CollectionsOperations.layouts));
 app.use('/persistence/users', CustomizeCollectionRouter(CollectionsOperations.users));
-app.use('/persistence/votes', UpvotesRouter);
+app.use('/persistence/votes', VotesRouter);
 app.use('/persistence/files', FilesRouter);
 
 app.get('/version', (req,res) => {

@@ -2,18 +2,14 @@ import dbPromise from './db'
 
 import uuid from 'uuid'
 // hooks:
-// verifyDocumentCorrectness(doc)
+// async verifyDocumentCorrectness(doc)
 // async shouldInsert(doc)
-// async postUpsert(doc, dbRes)
-// getId(doc)
+// async shouldUpdate(doc)
+// async postInsert(doc, dbRes)
+// async postUpdate(doc, dbRes)
+// async getId(doc)
 export const CollectionOperations = function(collectionName,hooks={}) {
   const insertOne = async function(doc,{preserveId}={preserveId:false}) {
-    if(hooks.verifyDocumentCorectness) {
-      const errorMessage = await hooks.verifyDocumentCorectness.call(operations,doc);
-      if(!!errorMessage) {
-        return {outcome: 'error', errorMessage};
-      }
-    }
     if(hooks.shouldInsert) {
       const shouldInsert = await hooks.shouldInsert.call(operations,doc);
       if(!shouldInsert) {
@@ -28,7 +24,7 @@ export const CollectionOperations = function(collectionName,hooks={}) {
       );
     };
     const normalizedDoc = Object.assign({},doc,{
-      id: (preserveId ? doc.id : undefined) || getId(doc) ,
+      id: (preserveId ? doc.id : undefined) || await getId(doc) ,
       creationTime: Date.now(),
       version: 0,
     });
@@ -38,8 +34,8 @@ export const CollectionOperations = function(collectionName,hooks={}) {
       .collection(collectionName)
       .insertOne(normalizedDoc);
 
-    if(hooks.postUpsert) {
-      await hooks.postUpsert.call(operations,normalizedDoc,dbRes);
+    if(hooks.postInsert) {
+      await hooks.postInsert.call(operations,normalizedDoc,dbRes);
     }
     return {
       id: normalizedDoc.id,
@@ -81,12 +77,6 @@ export const CollectionOperations = function(collectionName,hooks={}) {
       }
     }
 
-    if(hooks.shouldInsert) {
-      const shouldInsert = await hooks.shouldInsert.call(operations,doc);
-      if(!shouldInsert) {
-        return {outcome: 'noop'};
-      }
-    }
     const db = await dbPromise;
     const adjustedDoc = removeProtectedProperties(doc);
     adjustedDoc.modificationTime = Date.now();
@@ -103,7 +93,12 @@ export const CollectionOperations = function(collectionName,hooks={}) {
       // TODO: write a test for this
       return Promise.reject(new Error('Different owner!'))
     };
-
+    if(hooks.shouldUpdate) {
+      const shouldUpdate = await hooks.shouldUpdate.call(operations,doc);
+      if(!shouldUpdate) {
+        return {outcome: 'noop'};
+      }
+    }
     const dbRes = await db
       .collection(collectionName)
       .updateOne(
@@ -111,8 +106,8 @@ export const CollectionOperations = function(collectionName,hooks={}) {
         {$set: adjustedDoc, $inc: {version: 1}}
       );
     const outcome = (dbRes.result.nModified > 0) ? 'update' : 'failure';
-    if(hooks.postUpsert) {
-      await hooks.postUpsert.call(operations,adjustedDoc,dbRes);
+    if(hooks.postUpdate) {
+      await hooks.postUpdate.call(operations,adjustedDoc,dbRes);
     }
     return {
       id: adjustedDoc.id,
@@ -121,7 +116,32 @@ export const CollectionOperations = function(collectionName,hooks={}) {
     };
   };
 
+  const ensureTransformation = (id,transformation,retries=20,waitTime=50) => {
+    const attempt = async (retries) => {
+      if(retries == 0) {
+        throw new Error('The CAS operation failed too many times');
+      };
+      const documentInCurrentShape = await fetchOneById(id);
+      if(!documentInCurrentShape) throw new Error('No such document in any shape with id: ', id);
+      const transformedDocumentInCurrentShape = transformation(documentInCurrentShape);
+      try {
+        await compareVersionAndSet(transformedDocumentInCurrentShape)
+      } catch(err) {
+        await new Promise((res,rej) => setTimeout(res,waitTime));
+        await attempt(retries-1);
+      };
+    }
+    return attempt(retries);
+  };
+
   const compareVersionAndSet = async (doc) => {
+    if(hooks.verifyDocumentCorectness) {
+      const errorMessage = await hooks.verifyDocumentCorectness.call(operations,doc);
+      if(!!errorMessage) {
+        console.warn("Document incorrect:", errorMessage);
+        return {outcome: 'error', errorMessage};
+      }
+    }
     const db = await dbPromise;
     const oldVersion = doc.version;
     const adjustedDoc = removeProtectedProperties(doc);
@@ -139,13 +159,21 @@ export const CollectionOperations = function(collectionName,hooks={}) {
       // TODO: write a test for this
       return Promise.reject(new Error('Different owner!'))
     };
-
+    if(hooks.shouldUpdate) {
+      const shouldUpdate = await hooks.shouldUpdate.call(operations,doc);
+      if(!shouldUpdate) {
+        return {outcome: 'noop'};
+      }
+    }
     const dbRes = await db
       .collection(collectionName)
       .updateOne(
         {id : adjustedDoc.id, version: oldVersion, 'acl.owner': adjustedDoc.acl.owner},
         {$set: adjustedDoc, $inc: {version: 1}}
       );
+    if(hooks.postUpdate) {
+      await hooks.postUpdate.call(operations,adjustedDoc,dbRes);
+    }
     if(dbRes.result.nModified == 0) {
       return Promise.reject(new Error('wrong version or owner!'))
     }
@@ -186,9 +214,9 @@ export const CollectionOperations = function(collectionName,hooks={}) {
       .remove({});
   };
 
-  const getId = (doc) => {
+  const getId = async (doc) => {
     if (hooks.getId) {
-      return hooks.getId.call(operations, doc);
+      return await hooks.getId.call(operations, doc);
     } else {
       return uuid.v4();
     }
@@ -197,11 +225,12 @@ export const CollectionOperations = function(collectionName,hooks={}) {
   const operations = {
     fetch,
     fetchOneById,
-    insertOne,
     upsertOne,
     compareVersionAndSet,
+    ensureTransformation,
     deleteOne,
-    clearCollection
+    clearCollection,
+    hooks
   };
   return operations;
 };
