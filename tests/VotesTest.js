@@ -55,3 +55,31 @@ Promise.resolve()
       console.log('✓ Same vote correctly rejected')
     }
   })
+  .then(() => {
+    console.log('...Changin the vote to a positive one')
+    return apicall('persistence/votes/upsertOne',{
+      id:voteId,
+      username:'testu',
+      gestaltId:gestaltId,
+      vote:'positive'
+    },"POST")
+  })
+  .then((result) => {
+    if(result.outcome !== 'update') {
+      console.error('Vote should be allowed to be changed',result);
+    } else {
+      console.log('✓ Vote changed')
+    }
+  })
+  .then(() => {
+    console.log('...Changin the vote to a positive one')
+    return apicall('persistence/gestlats/fetch',{id:gestaltId},"POST")
+  })
+  .then((gestalts) => {
+    const gestalt = gestalts[0];
+    if(gestalt.upvotes !== 1) {
+      console.error('Vote should be counted',result);
+    } else {
+      console.log('✓ Vote counted')
+    }
+  })
