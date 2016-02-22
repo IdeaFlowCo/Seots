@@ -21,10 +21,8 @@ export const session = (req,res,next) => {
   findSessionData(sessionid)
     .then((sessiondata) => {
       if(sessiondata == null) {
-        console.log('sessiondata not found');
         req.sessiondata = {sessionid};
       } else {
-        console.log('sessiondata found',sessiondata);
         req.sessiondata = sessiondata;
       }
       next();
