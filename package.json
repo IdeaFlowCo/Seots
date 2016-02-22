@@ -5,7 +5,7 @@
   "main": "router.js",
   "scripts": {
     "start": "webpack --watch & ./node_modules/.bin/nodemon build/seots.bundle.js",
-    "test": "mocha --require source-map-support/register --watch build/tests.bundle.js",
+    "test": "mocha --require source-map-support/register build/tests.bundle.js",
     "buildtests": "webpack --progress --target node --display-modules --watch --config tests.webpack.config.js"
   },
   "private": true,

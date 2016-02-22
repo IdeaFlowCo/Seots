@@ -9,7 +9,7 @@ Object.keys(package.dependencies).forEach((mod) => {
 module.exports = {
   context: __dirname,
   entry: {
-    tests: './tests/all-tests'
+    tests: ['babel-polyfill', './tests/all-tests']
   },
   target: "node",
   output: {

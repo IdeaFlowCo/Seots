@@ -11,6 +11,7 @@ import {CustomizeCollectionRouter} from './GeneralizedCollectionRouter'
 
 import FilesRouter from './FilesRouter'
 import VotesRouter from './VotesRouter'
+import CommentsRouter from './CommentsRouter'
 
 import CookieParser from 'cookie-parser'
 
@@ -40,6 +41,7 @@ app.use('/persistence/connections', CustomizeCollectionRouter(CollectionsOperati
 app.use('/persistence/layouts', CustomizeCollectionRouter(CollectionsOperations.layouts));
 app.use('/persistence/users', CustomizeCollectionRouter(CollectionsOperations.users));
 app.use('/persistence/votes', VotesRouter);
+app.use('/persistence/comments', CommentsRouter);
 app.use('/persistence/files', FilesRouter);
 
 app.get('/version', (req,res) => {
