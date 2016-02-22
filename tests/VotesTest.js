@@ -1,13 +1,13 @@
 var apicall = require('./apicall').apicall
-var assert = require('assert');
-var gestaltId = undefined;
+var {assert, expect} = require('chai');
 
 describe('VotesTest', function() {
   // TODO: add asserts
   // TODO: break up test into smaller pieces
   it('Voting', function() {
-    assert(false);
-    Promise.resolve()
+    var voteId = undefined;
+    var gestaltId = undefined;
+    return Promise.resolve()
       .then(() => {
         console.log('...Creating a gestalt')
         return apicall('persistence/gestalts/upsertOne', {payload: {text: 'a'}}, "POST")
@@ -39,6 +39,8 @@ describe('VotesTest', function() {
       .then((result) => {
         if (result.outcome !== 'noop') {
           console.error('No duplicates should be allowed!', result);
+          assert.fail();
+
         } else {
           console.log('✓ Duplicate vote correctly rejected')
         }
@@ -54,6 +56,7 @@ describe('VotesTest', function() {
       })
       .then((result) => {
         if (result.outcome !== 'noop') {
+          assert.fail();
           console.error('Changing vote to the same one should result in a noop!', result);
         } else {
           console.log('✓ Same vote correctly rejected')
