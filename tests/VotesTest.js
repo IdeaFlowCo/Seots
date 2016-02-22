@@ -5,6 +5,14 @@ var voteId = undefined;
 
 Promise.resolve()
   .then(() => {
+    console.log('...Registering');
+    return apicall('auth/register',{username:'testu',password:'testp'},"POST")
+  })
+  .then(() => {
+    console.log('...Logging in');
+    return apicall('auth/login',{username:'testu',password:'testp'},"POST")
+  })
+  .then(() => {
     console.log('...Creating a gestalt')
     return apicall('persistence/gestalts/upsertOne',{payload:{text:'a'}},"POST")
   })

@@ -20,6 +20,8 @@ export default CustomizeCollectionRouter(CollectionOperations('votes', {
   async verifyDocumentCorectness(doc) {
     if(!doc.username) return 'No username defined';
     if(!doc.gestaltId) return 'No gestaltId defined';
+    if(doc.acl.owner !== doc.username)
+      return 'Owner different from provided username. Are you trying something funny here?' + doc.acl.owner + ' ' + doc.username;
     if(doc.vote != 'positive' && doc.vote != 'novote') return 'No such voting possibility';
     const matchingGestalt = await gestalts.fetch({id: doc.gestaltId});
     if (matchingGestalt.length != 1) {
