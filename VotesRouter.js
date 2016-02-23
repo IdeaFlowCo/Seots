@@ -1,38 +1,28 @@
 import {gestalts} from './SeotsCollections'
+
 import {CustomizeCollectionRouter} from './GeneralizedCollectionRouter'
 import {CollectionOperations} from './GeneralizedCollection'
 
-const shouldPersist = async function(doc) {
-  const votes = await this.fetch({
-    username:doc.username,
-    gestaltId:doc.gestaltId
-  });
-  if(votes.length > 0 && votes[0].vote == doc.vote) {
-    console.warn("Vote ignored because an identical vote exists");
-    return false;
-  }
-  if(votes.length == 0 && doc.vote == 0) {
-    console.log("Vote ignored because the vote was an unvote and no votes exist");
-    return false;
-  }
-  return true;
-};
+const voteValue = ({vote}) => (vote == 'positive') ? 1 : 0;
 
-const postUpsert = async function(doc,dbRes) {
-  const delta = doc.vote ? 1 : -1;
+const handleVoteDelta = async function(gestaltId,delta) {
   const transform = (gestalt) => {
+    console.log('attempting delta',delta,gestaltId);
     const currentUpvotes = gestalt.upvotes || 0;
     return Object.assign({}, gestalt, {upvotes: currentUpvotes + delta});
   };
 
-  return await gestalts.ensureTransformation(doc.gestaltId, transform);
+  return await gestalts.ensureTransformation(gestaltId,transform);
 };
 
-export default CustomizeCollectionRouter(CollectionOperations('upvotes', {
+export default CustomizeCollectionRouter(CollectionOperations('votes', {
 
   async verifyDocumentCorectness(doc) {
     if(!doc.username) return 'No username defined';
     if(!doc.gestaltId) return 'No gestaltId defined';
+    if(doc.acl.owner !== doc.username)
+      return 'Owner different from provided username. Are you trying something funny here?' + doc.acl.owner + ' ' + doc.username;
+    if(doc.vote != 'positive' && doc.vote != 'novote') return 'No such voting possibility';
     const matchingGestalt = await gestalts.fetch({id: doc.gestaltId});
     if (matchingGestalt.length != 1) {
       return 'Matching gestalt not found';
@@ -40,19 +30,31 @@ export default CustomizeCollectionRouter(CollectionOperations('upvotes', {
   },
 
   async shouldInsert(doc) {
-    return await shouldPersist.call(this,doc);
+    const votes = await this.fetch({
+      username:doc.username,
+      gestaltId:doc.gestaltId
+    });
+    if(votes.length > 0) {
+      console.warn("Duplicate vote cannot be inserted");
+      return false;
+    };
+    return true;
   },
 
   async shouldUpdate(existingDoc,doc) {
-    return await shouldPersist.call(this,doc);
+    if(doc.vote == existingDoc.vote) {
+      console.warn("Vote ignored because an identical vote exists");
+      return false;
+    }
+    return true;
   },
 
   async postInsert(doc,dbRes) {
-    console.log(dbRes);
-    return await postUpsert.call(this,doc,dbRes)
+    const delta = voteValue(doc);
+    return await handleVoteDelta(doc.gestaltId,delta)
   },
   async postUpdate(existingDoc,doc,dbRes) {
-    console.log(dbRes);
-    return await postUpsert.call(this,doc,dbRes)
+    const delta = voteValue(doc) - voteValue(existingDoc);
+    return await handleVoteDelta(doc.gestaltId,delta)
   },
 }));

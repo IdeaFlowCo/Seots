@@ -177,7 +177,7 @@ export const CollectionOperations = function(collectionName,hooks={}) {
     if(dbRes.result.nModified == 0) {
       return Promise.reject(new Error('wrong version or owner!'))
     }
-    if(hooks.postUpdate == 'update') {
+    if(hooks.postUpdate) {
       await hooks.postUpdate
         .call(operations,existingDoc,adjustedDoc,dbRes);
     }
