@@ -2,8 +2,7 @@ import {gestalts} from './SeotsCollections'
 import {CustomizeCollectionRouter} from './GeneralizedCollectionRouter'
 import {CollectionOperations} from './GeneralizedCollection'
 
-
-export default CustomizeCollectionRouter(CollectionOperations('comments', {
+export default CollectionOperations('comments', {
   async verifyDocumentCorrectness(doc) {
     // Expected doc:
     // {
@@ -32,4 +31,5 @@ export default CustomizeCollectionRouter(CollectionOperations('comments', {
     };
     return gestalts.ensureTransformation(doc.gestaltId, transform);
   }
-}));
+});
+
