@@ -69,8 +69,8 @@ export const CollectionOperations = function(collectionName,hooks={}) {
   };
 
   const upsertOne = async function(doc) {
-    if(hooks.verifyDocumentCorectness) {
-      const errorMessage = await hooks.verifyDocumentCorectness.call(operations,doc);
+    if(hooks.verifyDocumentCorrectness) {
+      const errorMessage = await hooks.verifyDocumentCorrectness.call(operations,doc);
       console.log(errorMessage);
       if(!!errorMessage) {
         return {outcome: 'error', errorMessage};
@@ -137,8 +137,8 @@ export const CollectionOperations = function(collectionName,hooks={}) {
   };
 
   const compareVersionAndSet = async (doc) => {
-    if(hooks.verifyDocumentCorectness) {
-      const errorMessage = await hooks.verifyDocumentCorectness.call(operations,doc);
+    if(hooks.verifyDocumentCorrectness) {
+      const errorMessage = await hooks.verifyDocumentCorrectness.call(operations,doc);
       if(!!errorMessage) {
         console.warn("Document incorrect:", errorMessage);
         return {outcome: 'error', errorMessage};
