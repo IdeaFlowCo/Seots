@@ -5,7 +5,7 @@ export const filter = (docs,sessiondata) => {
     if(doc.acl.readPermissions.indexOf(sessiondata.username) != -1) return true;
     return false;
   })
-}
+};
 
 export const addACLToDoc = (doc,sessiondata) => {
   const acl = {
@@ -13,7 +13,7 @@ export const addACLToDoc = (doc,sessiondata) => {
     readPermissions: []
   };
   return Object.assign({},doc,{acl});
-}
+};
 
 export const addReadPermission = (doc,owner,username) => {
   if(!doc.acl || doc.acl.owner !== owner) return doc;
@@ -21,4 +21,4 @@ export const addReadPermission = (doc,owner,username) => {
     readPermissions: doc.acl.concat([username])
   });
   return Object.assign({},doc,{acl});
-}
+};

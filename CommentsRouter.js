@@ -14,20 +14,22 @@ export default CustomizeCollectionRouter(CollectionOperations('comments', {
     if (!(doc.username && doc.gestaltId && doc.text)) {
       return "Comment is invalid (missing fields)";
     }
+
     if (!gestalts.fetchOneById(doc.gestaltId)) {
       return "Matching gestalt not found";
     }
+
+    if(doc.acl.owner !== doc.username)
+      return 'Owner different from provided username. Are you trying something funny here?' + doc.acl.owner + ' ' + doc.username;
+
   },
 
   async postInsert(doc) {
-    const commentId = doc.id;
-    const matchingGestalt = gestalts.fetchOneById(doc.gestaltId);
     const transform = (gestalt) => {
       const currentComments = gestalt.commentIds || [];
-      const newComments = currentComments.slice();
-      newComments.push(doc.id);
+      const newComments = [...currentComments, doc.id];
       return Object.assign({}, gestalt, {commentIds: newComments});
     };
-    gestalts.ensureTransformation(doc.gestaltId, transform);
+    return gestalts.ensureTransformation(doc.gestaltId, transform);
   }
 }));
