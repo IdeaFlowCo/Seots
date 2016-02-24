@@ -17,7 +17,7 @@ const handleVoteDelta = async function(gestaltId,delta) {
 
 export default CustomizeCollectionRouter(CollectionOperations('votes', {
 
-  async verifyDocumentCorectness(doc) {
+  async verifyDocumentCorrectness(doc) {
     if(!doc.username) return 'No username defined';
     if(!doc.gestaltId) return 'No gestaltId defined';
     if(doc.acl.owner !== doc.username)
