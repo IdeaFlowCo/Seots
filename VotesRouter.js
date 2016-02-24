@@ -35,7 +35,9 @@ export default CustomizeCollectionRouter(CollectionOperations('votes', {
     if(doc.vote != 'positive' && doc.vote != 'novote') return 'No such voting possibility';
     const matchingObject = await getCollection(doc.type).fetch({id: doc.targetId});
     if (matchingObject.length != 1) {
-      return 'Matching gestalt not found';
+      return `Matching gestalt not found. Found: ${matchingObject}.` +
+        ` Query was: [${doc.type}]{id: ${doc.targetId}`;
+
     }
   },
 
@@ -43,7 +45,6 @@ export default CustomizeCollectionRouter(CollectionOperations('votes', {
     const votes = await this.fetch({
       username:doc.username,
       targetId:doc.targetId,
-
     });
     if(votes.length > 0) {
       console.warn("Duplicate vote cannot be inserted");
