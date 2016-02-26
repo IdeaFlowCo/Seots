@@ -14,7 +14,7 @@ export default CollectionOperations('comments', {
       return "Comment is invalid (missing fields)";
     }
 
-    if (!gestalts.fetchOneById(doc.gestaltId)) {
+    if (!(await gestalts.fetchOneById(doc.gestaltId))) {
       return "Matching gestalt not found";
     }
 

@@ -1,5 +1,5 @@
 var apicall = require('./apicall').apicall
-var {assert, expect} = require('chai');
+var {expect} = require('chai');
 const chai = require('chai');
 
 describe('VotesTest', function () {

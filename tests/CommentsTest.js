@@ -20,6 +20,14 @@ describe('CommentRouter', function () {
       {gestaltId: gestalt.id, text: "comment text"}, "POST");
     expect(comment.outcome).to.equal("error");
   });
+
+  it('Reject comments without a matching gestalt', async function() {
+    const notAGestaltId = 12312323;
+    const comment = await apicall('persistence/comments/upsertOne',
+      {gestaltId: notAGestaltId, text: "whatever", username: 'testu'}, "POST");
+    console.log(comment);
+    expect(comment.outcome).to.equal('error');
+  });
   // TODO: Delete comments
   // TODO: Edit comments
 });
