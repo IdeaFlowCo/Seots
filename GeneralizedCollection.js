@@ -53,13 +53,15 @@ export const CollectionOperations = function(collectionName,hooks={}) {
     return newDoc;
   };
 
-  const fetch = (criteria) => {
+  const fetch = (criteria, skip, limit) => {
     return dbPromise
       .then((db) => {
         return db
           .collection(collectionName)
           .find(criteria || {})
-          .sort({creationTime : 1})
+          .sort({creationTime: -1})
+          .skip(skip)
+          .limit(limit)
           .toArray();
       });
   };

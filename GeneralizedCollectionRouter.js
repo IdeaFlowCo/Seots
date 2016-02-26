@@ -11,7 +11,8 @@ export const CustomizeCollectionRouter = (operations,hydrate=identity,serialize=
   return Router()
     .use(bodyParser.json())
     .post('/fetch/', (req,res) => {
-      const promise = operations.fetch(req.body)
+      const {criteria, skip, limit} = req.body;
+      const promise = operations.fetch(criteria, skip, limit)
         .then((docs) => docs.map(hydrate))
         .then((docs) => AccessControl.filter(docs,req.sessiondata));
       exposePromise(promise)(req,res);
