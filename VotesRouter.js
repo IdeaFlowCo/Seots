@@ -7,10 +7,10 @@ import {CollectionOperations} from './GeneralizedCollection'
 const voteValue = ({vote}) => (vote == 'positive') ? 1 : 0;
 
 const handleVoteDelta = async function(targetId,delta,collection) {
-  const transform = (gestalt) => {
+  const transform = (object) => {
     console.log('attempting delta',delta,targetId);
-    const currentUpvotes = gestalt.upvotes || 0;
-    return Object.assign({}, gestalt, {upvotes: currentUpvotes + delta});
+    const currentUpvotes = object.upvotes || 0;
+    return Object.assign({}, object, {upvotes: currentUpvotes + delta});
   };
 
   return await collection.ensureTransformation(targetId,transform);
