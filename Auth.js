@@ -3,6 +3,9 @@ import dbPromise from './db'
 
 import crypto from 'crypto'
 
+import {gestalts} from './SeotsCollections'
+import {CollectionOperations} from './GeneralizedCollection'
+
 const hashAndSaltPassword = (username,password) => {
   return crypto
     .createHash('sha256')
@@ -94,17 +97,44 @@ export const register = (req,res) => {
       res.status(403).json({message: 'Duplicate user'});
     })
     .catch((user) => {
-      insertUserObject(userObject)
-      .then((result) => {
-        if(result.insertedCount == 1) {
-          res.status(200).json({message: 'Registration correct'})
-        } else {
-          return Promise.reject(new Error("fail"));
-        }
-      })
-      .catch((error) => {
-        res.status(500).json({message: 'Server error', error: error.stack});
-      })
+      // Check if username is already a boardName
+      gestalts.fetch({boardName: username})
+        .then((gestalts) => {
+          if (gestalts.length > 0) {
+            res.status(403).json({message: 'boardName exists'});
+              return Promise.reject(new Error("boardName exists"));
+          }
+          insertUserObject(userObject)
+          .then((result) => {
+            if(result.insertedCount == 1) {
+              res.status(200).json({message: 'Registration correct'})
+              const userBoard = {
+                boardName: username,
+                payload: {},
+                acl: {
+                  owner: username,
+                  readPermissions: [],
+                  public: true
+                }
+              };
+              //gestalts.upsertOne(userBoard);
+              insertUserBoard(userBoard)
+              .then((result) => {
+                if(result.insertedCount == 1) {
+                  res.status(200).json({message: 'Registration correct'})
+                } else {
+                  // TODO: How to rollback registration if user board creation fails?
+                  return Promise.reject(new Error("fail"));
+                }
+              });
+            } else {
+              return Promise.reject(new Error("fail"));
+            }
+          })
+          .catch((error) => {
+            res.status(500).json({message: 'Server error', error: error.stack});
+          })
+        });
     })
 }
 
@@ -127,6 +157,13 @@ const insertUserObject = (userObject) => {
     return db
       .collection('users')
       .insertOne(userObject)
+  });
+}
+
+const insertUserBoard = (boardObject) => {
+  return dbPromise
+  .then((db) => {
+    return gestalts.upsertOne(boardObject);
   });
 }
 

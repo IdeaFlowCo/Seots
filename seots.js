@@ -35,7 +35,6 @@ authRouter
 app.use(Auth.session)
 app.use('/auth', authRouter);
 
-app.use('/persistence/boards', CustomizeCollectionRouter(CollectionsOperations.boards));
 app.use('/persistence/gestalts', CustomizeCollectionRouter(CollectionsOperations.gestalts));
 app.use('/persistence/connections', CustomizeCollectionRouter(CollectionsOperations.connections));
 app.use('/persistence/layouts', CustomizeCollectionRouter(CollectionsOperations.layouts));
