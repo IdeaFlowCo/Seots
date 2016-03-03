@@ -1,4 +1,4 @@
-var boardName = 'import'
+var boardName = 'import';
 
 var nodes = require('./hinodes')
   .map((node) => {
@@ -6,9 +6,9 @@ var nodes = require('./hinodes')
       id: node._id,
       boardName: boardName,
       payload: {
-        text: node.slug
-      }
-    }
+        text: node.slug,
+      },
+    };
   });
 var edges = require('./hiedges')
   .map((edge) => {
@@ -17,33 +17,33 @@ var edges = require('./hiedges')
       targetId: edge.target._id,
       sourceId: edge.source._id,
       payload: {
-        text: edge.text
-      }
-    }
+        text: edge.text,
+      },
+    };
   });
 
-console.log('edges: ',edges.length);
-console.log('nodes: ',nodes.length);
+console.log('edges: ', edges.length);
+console.log('nodes: ', nodes.length);
 
 var dbUrl = "mongodb://localhost/seots_data";
 var MongoClient = require('mongodb').MongoClient;
 var dbPromise = MongoClient.connect(dbUrl);
 
 dbPromise
-  .catch((err) => {console.log('db problem', err)})
+  .catch((err) => {console.log('db problem', err);})
   .then((db) => {
     return Promise.resolve()
       .then(() => {
         return db.collection('gestalts')
-          .insertMany(nodes)
+          .insertMany(nodes);
       })
       .then(() => {
         return db.collection('connections')
-          .insertMany(edges)
-      })
+          .insertMany(edges);
+      });
   })
   .catch((err) => {
     console.log(err);
-  })
+  });
 
-console.log(edges,nodes);
+console.log(edges, nodes);

@@ -1,6 +1,6 @@
-import {gestalts} from './SeotsCollections'
-import {CustomizeCollectionRouter} from './GeneralizedCollectionRouter'
-import {CollectionOperations} from './GeneralizedCollection'
+import {gestalts} from './SeotsCollections';
+import {CustomizeCollectionRouter} from './GeneralizedCollectionRouter';
+import {CollectionOperations} from './GeneralizedCollection';
 
 export default CollectionOperations('comments', {
   async verifyDocumentCorrectness(doc) {
@@ -18,7 +18,7 @@ export default CollectionOperations('comments', {
       return "Matching gestalt not found";
     }
 
-    if(doc.acl.owner !== doc.username)
+    if (doc.acl.owner !== doc.username)
       return 'Owner different from provided username. Are you trying something funny here?' + doc.acl.owner + ' ' + doc.username;
 
   },
@@ -27,9 +27,9 @@ export default CollectionOperations('comments', {
     const transform = (gestalt) => {
       const currentComments = gestalt.commentIds || [];
       const newComments = [...currentComments, doc.id];
-      return Object.assign({}, gestalt, {commentIds: newComments});
+      return Object.assign({}, gestalt, { commentIds: newComments });
     };
-    return gestalts.ensureTransformation(doc.gestaltId, transform);
-  }
-});
 
+    return gestalts.ensureTransformation(doc.gestaltId, transform);
+  },
+});

@@ -1,7 +1,7 @@
-import config from './config'
+import config from './config';
 
-import {MongoClient} from 'mongodb'
+import {MongoClient} from 'mongodb';
 
 const dbPromise = MongoClient.connect(config.dbUrl);
 
-export default dbPromise
+export default dbPromise;

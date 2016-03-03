@@ -1,4 +1,4 @@
-import {CollectionOperations} from './GeneralizedCollection'
+import {CollectionOperations} from './GeneralizedCollection';
 
 export const boards      = CollectionOperations('boards');
 export const gestalts    = CollectionOperations('gestalts');
