@@ -1,4 +1,4 @@
-import dbPromise from './db';
+import dbPromise from '../config/db';
 
 import uuid from 'uuid';
 

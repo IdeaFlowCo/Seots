@@ -1,5 +1,5 @@
 import {gestalts} from './SeotsCollections';
-import {CustomizeCollectionRouter} from './GeneralizedCollectionRouter';
+import {CustomizeCollectionRouter} from '../routes/GeneralizedCollectionRouter';
 import {CollectionOperations} from './GeneralizedCollection';
 
 export default CollectionOperations('comments', {

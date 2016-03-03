@@ -1,4 +1,4 @@
-import dbPromise from './db';
+import dbPromise from '../config/db';
 import {GridStore, ObjectId} from 'mongodb';
 
 import uuid from 'uuid';
@@ -8,7 +8,7 @@ import fs from 'fs';
 import bodyParser from 'body-parser';
 import {Router} from 'express';
 
-import {exposePromise} from './ExposePromise';
+import {exposePromise} from '../helpers/ExposePromise';
 const exposeFilePromise = (promise) => (req, res) => {
   return promise
     .then(({ content, metadata }) => res.status(200).set('Content-Type', metadata.contentType).end(content))

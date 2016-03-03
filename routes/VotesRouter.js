@@ -1,8 +1,8 @@
-import {gestalts} from './SeotsCollections';
-import comments from './CommentsCollection';
+import {gestalts} from '../models/SeotsCollections';
+import comments from '../models/CommentsCollection';
 
 import {CustomizeCollectionRouter} from './GeneralizedCollectionRouter';
-import {CollectionOperations} from './GeneralizedCollection';
+import {CollectionOperations} from '../models/GeneralizedCollection';
 
 const voteValue = ({ vote }) => (vote == 'positive') ? 1 : 0;
 
@@ -65,11 +65,11 @@ export default CustomizeCollectionRouter(CollectionOperations('votes', {
 
   async postInsert(doc, dbRes) {
     const delta = voteValue(doc);
-    return await handleVoteDelta(doc.targetId, delta, getCollection(doc.type))
+    return await handleVoteDelta(doc.targetId, delta, getCollection(doc.type));
   },
 
   async postUpdate(existingDoc, doc, dbRes) {
     const delta = voteValue(doc) - voteValue(existingDoc);
-    return await handleVoteDelta(doc.targetId, delta, getCollection(doc.type))
+    return await handleVoteDelta(doc.targetId, delta, getCollection(doc.type));
   },
 }));

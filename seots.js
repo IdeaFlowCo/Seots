@@ -1,25 +1,22 @@
-import sms from 'source-map-support';
-sms.install();
-
 import express from 'express';
-import config from './config';
+import config from './config/config';
 
 const app = express();
 
-import * as CollectionsOperations from './SeotsCollections';
-import {CustomizeCollectionRouter} from './GeneralizedCollectionRouter';
+import * as CollectionsOperations from './models/SeotsCollections';
+import {CustomizeCollectionRouter} from './routes/GeneralizedCollectionRouter';
 
-import FilesRouter from './FilesRouter';
-import VotesRouter from './VotesRouter';
-import CommentsCollection from './CommentsCollection';
+import FilesRouter from './routes//FilesRouter';
+import VotesRouter from './routes/VotesRouter';
+import CommentsCollection from './models/CommentsCollection';
 
 import CookieParser from 'cookie-parser';
 
 app.use('/*', CookieParser());
 
 // Auth
-import * as Auth from './Auth';
-import dbPromise from './db';
+import * as Auth from './helpers/Auth';
+import dbPromise from './config/db';
 import bodyParser from 'body-parser';
 const authRouter = express.Router();
 

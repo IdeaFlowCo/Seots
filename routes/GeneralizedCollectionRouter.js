@@ -1,11 +1,11 @@
 import bodyParser from 'body-parser';
 import {Router} from 'express';
 
-import {exposePromise} from './ExposePromise';
+import {exposePromise} from '../helpers/ExposePromise';
 
 const identity = (a) => a;
 
-import * as AccessControl from './AccessControl';
+import * as AccessControl from '../helpers/AccessControl';
 
 export const CustomizeCollectionRouter = (operations, hydrate=identity, serialize=identity) => {
   return Router()

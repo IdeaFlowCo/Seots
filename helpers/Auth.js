@@ -1,5 +1,5 @@
 import uuid from 'uuid';
-import dbPromise from './db';
+import dbPromise from '../config/db';
 
 import crypto from 'crypto';
 
