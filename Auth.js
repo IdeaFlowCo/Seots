@@ -1,10 +1,13 @@
 import uuid from 'uuid'
-import dbPromise from './db'
+//import dbPromise from './db'
 
 import crypto from 'crypto'
 
+import {users} from './SeotsCollections'
 import {gestalts} from './SeotsCollections'
 import {CollectionOperations} from './GeneralizedCollection'
+
+const sessions = CollectionOperations('sessions');
 
 const hashAndSaltPassword = (username,password) => {
   return crypto
@@ -14,73 +17,56 @@ const hashAndSaltPassword = (username,password) => {
     .toString('hex');
 }
 
-export const session = (req,res,next) => {
+export const session = async (req,res,next) => {
   console.log(req.cookies);
   let sessionid = req.cookies['sessionid'];
   if(sessionid === undefined) {
     sessionid = uuid.v4();
     res.cookie('sessionid',sessionid,{ expires: new Date(Date.now() + 1000*60*75), httpOnly: true })
   }
-  findSessionData(sessionid)
-    .then((sessiondata) => {
-      if(sessiondata == null) {
-        req.sessiondata = {sessionid};
-      } else {
-        req.sessiondata = sessiondata;
-      }
-      next();
-    })
-    .catch((error) => {
-      console.log('error', error.stack);
-      next();
-    })
+  const sessiondata = await sessions.fetch({sessionid: sessionid});
+  if(sessiondata.length > 0) {
+    req.sessiondata = sessiondata[0];
+  } else {
+    req.sessiondata = {sessionid};
+  }
+  next();
 }
 
-export const login = (req,res) => {
+export const login = async (req,res) => {
   const {username,password} = req.body;
   if(!username || !password || username.constructor !== String || password.constructor !== String) {
     res.status(401).json({message: 'Invalid input'})
   }
-  dbPromise
-    .then((db) => {
-      return db
-        .collection('users')
-        .find({username, password : hashAndSaltPassword(username,password)})
-        .toArray()
-    })
-    .then((users) => {
-      if(users.length > 1) throw new Error('Catastrophy!');
-      if(users.length == 0) {
-        res.status(403).json({message: 'Incorrect username or password'});
-        return;
-      };
-      const user = users[0];
+  const usersResult = await users.fetch({username, password : hashAndSaltPassword(username,password)});
+  if(usersResult.length > 1) throw new Error('Catastrophy!');
+  if(usersResult.length == 0) {
+    res.status(403).json({message: 'Incorrect username or password'});
+    return;
+  };
+  const user = users[0];
 
-      const sessiondata = req.sessiondata;
-      console.log('username',username);
-      const newSessionData = Object.assign({},sessiondata,{
-        username
-      });
-      updateSessionData(sessiondata.sessionid,newSessionData)
-        .then(() => {
-          res.status(200).json({message: 'Login pass', sessiondata: newSessionData})
-        })
-    })
-    .catch((error) => {
-      res.status(500).json({message: 'Server error', error: error.stack});
-    })
-}
-
-export const logout = (req,res) => {
   const sessiondata = req.sessiondata;
-  const newSessionData = Object.assign({},sessiondata,{username:undefined});
-  updateSessionData(sessiondata.sessionid,newSessionData)
-    .then(() => {
-      res.status(200).json({message: 'Logout pass', sessiondata: newSessionData})
-    })
+  const newSessionData = Object.assign({},sessiondata,{
+    username
+  });
+  result = await sessions.upsertOne(newSessionData);
+  res.status(200).json({message: 'Login pass', sessiondata: newSessionData})
 }
 
-export const register = (req,res) => {
+export const logout = async (req,res) => {
+  const sessiondata = req.sessiondata;
+  const id = sessiondata.id
+  const newSessionData = Object.assign({},sessiondata,{username:undefined});
+  const transform = (sessionData) => {
+    console.log('updating session data to',newSessionData);
+    return newSessionData;
+  };
+  await sessions.ensureTransformation({id}, transform)
+  res.status(200).json({message: 'Logout pass', sessiondata: newSessionData})
+}
+
+export const register = async (req,res) => {
   const {username,password} = req.body;
   if(!username || !password || username.constructor !== String || password.constructor !== String) {
     res.status(401).json({message: 'Invalid input'})
@@ -92,93 +78,26 @@ export const register = (req,res) => {
   }
   let userExists;
   // Lets not worry about concurrency errors just yet
-  findUser(username)
-    .then((user) => {
-      res.status(403).json({message: 'Duplicate user'});
-    })
-    .catch((user) => {
-      // Check if username is already a boardName
-      gestalts.fetch({boardName: username})
-        .then((gestalts) => {
-          if (gestalts.length > 0) {
-            res.status(403).json({message: 'boardName exists'});
-              return Promise.reject(new Error("boardName exists"));
-          }
-          insertUserObject(userObject)
-          .then((result) => {
-            if(result.insertedCount == 1) {
-              res.status(200).json({message: 'Registration correct'})
-              const userBoard = {
-                boardName: username,
-                payload: {},
-                acl: {
-                  owner: username,
-                  readPermissions: [],
-                  public: true
-                }
-              };
-              //gestalts.upsertOne(userBoard);
-              insertUserBoard(userBoard)
-              .then((result) => {
-                if(result.insertedCount == 1) {
-                  res.status(200).json({message: 'Registration correct'})
-                } else {
-                  // TODO: How to rollback registration if user board creation fails?
-                  return Promise.reject(new Error("fail"));
-                }
-              });
-            } else {
-              return Promise.reject(new Error("fail"));
-            }
-          })
-          .catch((error) => {
-            res.status(500).json({message: 'Server error', error: error.stack});
-          })
-        });
-    })
-}
-
-const findUser = (username) => {
-  return dbPromise
-  .then((db) => {
-    return db
-      .collection('users')
-      .findOne({username})
-  })
-  .then((user) => {
-    if(!user) return Promise.reject('No such user');
-    return Promise.resolve(user);
-  })
-}
-
-const insertUserObject = (userObject) => {
-  return dbPromise
-  .then((db) => {
-    return db
-      .collection('users')
-      .insertOne(userObject)
-  });
-}
-
-const insertUserBoard = (boardObject) => {
-  return dbPromise
-  .then((db) => {
-    return gestalts.upsertOne(boardObject);
-  });
-}
-
-const findSessionData = (sessionid) => {
-  return dbPromise
-    .then((db) => {
-      return db.collection('sessions')
-        .findOne({sessionid})
-    })
-}
-
-const updateSessionData = (sessionid,sessiondata) => {
-  return dbPromise
-    .then((db) => {
-      return db.collection('sessions')
-        .updateOne({sessionid}, sessiondata, {upsert: true})
-    })
+  const user = await users.fetch({username});
+  if(user.length > 0) {
+    res.status(403).json({message: 'Duplicate user'});
+  } else {
+    const gestalts = await users.fetch({boardName:username});
+    console.log('found gestalts',gestalts);
+    if (gestalts.length > 0) {
+      res.status(403).json({message: 'boardName exists'});
+        return Promise.reject(new Error("boardName exists"));
+    }
+    const userBoard = {
+      boardName: username,
+      payload: {},
+      acl: {
+        owner: username,
+        readPermissions: ['public']
+      }
+    }
+    const insertUser = await  users.upsertOne(userObject);
+    const insertBoard = await gestalts.upsertOne(userBoard);
+    // TODO: How to rollback registration if user board creation fails?
+  }
 }
