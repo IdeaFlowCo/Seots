@@ -4,21 +4,22 @@
   "description": "",
   "main": "router.js",
   "scripts": {
-    "start": "webpack --watch & ./node_modules/.bin/nodemon build/seots.bundle.js",
-    "test": "mocha --require source-map-support/register build/tests.bundle.js",
-    "buildtests": "webpack --progress --target node --display-modules --watch --config tests.webpack.config.js"
+    "start": "node index.js",
+    "test": "mocha --require babel-core/register tests/**/*.js"
   },
   "private": true,
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "babel-core": "^6.3.17",
-    "babel-loader": "^6.2.0",
-    "babel-polyfill": "^6.3.14",
-    "babel-preset-es2015": "^6.3.13",
-    "babel-preset-stage-0": "^6.3.13",
-    "json-loader": "^0.5.4",
+    "babel-core": "^6.6.4",
+    "babel-plugin-transform-runtime": "^6.6.0",
+    "babel-preset-es2015": "^6.6.0",
+    "babel-preset-stage-0": "^6.5.0",
+    "babel-runtime": "^6.6.1",
     "chai": "^3.5.0",
+    "jscs": "^2.11.0",
+    "json-loader": "^0.5.4",
+    "mocha": "^2.4.5",
     "uuid": "^2.0.1"
   },
   "dependencies": {
@@ -28,7 +29,6 @@
     "express": "^4.13.3",
     "mongodb": "^2.0.52",
     "node-fetch": "^1.3.3",
-    "nodemon": "^1.8.1",
-    "source-map-support": "^0.4.0"
+    "nodemon": "^1.8.1"
   }
 }
