@@ -175,9 +175,7 @@ export const CollectionOperations = function(collectionName,hooks={}) {
         {id : adjustedDoc.id, version: oldVersion, 'acl.owner': adjustedDoc.acl.owner},
         {$set: adjustedDoc, $inc: {version: 1}}
       );
-    console.log('result is', dbRes);
     if(dbRes.result.nModified == 0) {
-      console.log('terrible things happened');
       return Promise.reject(new Error('wrong version or owner!'))
     }
     if(hooks.postUpdate) {

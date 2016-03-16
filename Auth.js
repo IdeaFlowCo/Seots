@@ -50,8 +50,12 @@ export const login = async (req,res) => {
     username
   });
   const result = await sessions.upsertOne(newSessionData);
-  //console.log('result is', result);
-  res.status(200).json({message: 'Login pass', sessiondata: newSessionData})
+  if(result.result.ok) {
+    res.status(200).json({message: 'Login pass', sessiondata: newSessionData})
+  }
+  else {
+    res.status(500).json({message: 'Database operation unsuccessful'})
+  }
 }
 
 export const logout = async (req,res) => {
@@ -67,8 +71,12 @@ export const logout = async (req,res) => {
   const result = await sessions.ensureTransformation(id, transform)
   */
   const result = await sessions.upsertOne(newSessionData);
-  console.log('result is', result);
-  res.status(200).json({message: 'Logout pass', sessiondata: newSessionData})
+  if(result.result.ok) {
+    res.status(200).json({message: 'Logout pass', sessiondata: newSessionData})
+  }
+  else {
+    res.status(500).json({message: 'Database operation unsuccessful'})
+  }
 }
 
 export const register = async (req,res) => {
@@ -88,7 +96,6 @@ export const register = async (req,res) => {
     res.status(403).json({message: 'Duplicate user'});
   } else {
     const fetchedGestalts = await users.fetch({boardName:username});
-    console.log('found gestalts',fetchedGestalts);
     if (fetchedGestalts.length > 0) {
       res.status(403).json({message: 'boardName exists'});
         return Promise.reject(new Error("boardName exists"));
@@ -105,10 +112,13 @@ export const register = async (req,res) => {
       }
     }
     const insertUser = await users.upsertOne(userObject);
-    console.log('hey there', insertUser);
     const insertBoard = await gestalts.upsertOne(userBoard);
-    console.log('hi again', insertBoard);
     // TODO: How to rollback registration if user board creation fails?
-    res.status(200).json({message: 'Registration correct'})
+    if(insertUser.result.ok && insertBoard.result.ok) {
+      res.status(200).json({message: 'Registration correct'})
+    }
+    else {
+      res.status(500).json({message: 'Database operation unsuccessful'})
+    }
   }
 }
