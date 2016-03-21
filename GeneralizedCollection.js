@@ -118,7 +118,7 @@ export const CollectionOperations = function(collectionName,hooks={}) {
     };
   };
 
-  const ensureTransformation = (id,transformation,retries=20,waitTime=50) => {
+  const ensureTransformation = async (id,transformation,retries=20,waitTime=50) => {
     const attempt = async (retries) => {
       if(retries == 0) {
         throw new Error('The CAS operation failed too many times');
@@ -168,6 +168,7 @@ export const CollectionOperations = function(collectionName,hooks={}) {
         return {outcome: 'noop'};
       }
     }
+    // TODO SESSIONS DOES NOT HAVE AN ACL
     const dbRes = await db
       .collection(collectionName)
       .updateOne(

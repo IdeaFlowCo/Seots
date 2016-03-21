@@ -22,5 +22,16 @@ export const apiExposeFromPromise = (req,res) => {
 export const exposePromise = (promise) => (req,res) => {
   return promise
     .then((result) => res.status(200).json(result))
-    .catch((error) => res.status(500).json({message: error.message, stack: error.stack}))
+    .catch((error) => {
+      console.log(error,error.stack);
+      res.status(500).json({message: error.message, stack: error.stack})
+    })
+}
+
+export const exposeRejectedPromise = (promise) => (req,res) => {
+  return promise
+    .catch((error) => {
+      console.log(error,error.stack);
+      res.status(500).json({message: error.message, stack: error.stack})
+    })
 }
