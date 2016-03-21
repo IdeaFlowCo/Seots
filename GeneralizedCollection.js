@@ -144,19 +144,19 @@ export const CollectionOperations = function(collectionName,hooks={}) {
         return {outcome: 'error', errorMessage};
       }
     }
+    if(doc.id === undefined) {
+      return {outcome: 'error', errorMessage: 'No id set'};
+    }
+    if(doc.version === undefined) {
+      return {outcome: 'error', errorMessage: 'No version set'};
+    }
     const db = await dbPromise;
     const oldVersion = doc.version;
     const adjustedDoc = removeProtectedProperties(doc);
     adjustedDoc.modificationTime = Date.now();
-    if(adjustedDoc.id === undefined) {
-      return insertOne(adjustedDoc);
-    }
     const existingDoc = await db
       .collection(collectionName)
       .findOne({id: adjustedDoc.id,version: oldVersion})
-    if(!existingDoc) {
-      return insertOne(adjustedDoc,{preserveId:true});
-    };
     if(!!existingDoc.acl && existingDoc.acl.owner != adjustedDoc.acl.owner) {
       // TODO: write a test for this
       return Promise.reject(new Error('Different owner!'))
